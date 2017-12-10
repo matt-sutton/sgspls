@@ -1,0 +1,15 @@
+Package: sgspls
+Type: Package
+Title: Sparse group-subgroup partial least squares
+Version: 1.0
+Date: 2017-12-09
+Author: Matthew Sutton, Benoit Liquet
+Maintainer: Matthew Sutton <matt.sutton@qut.qut.edu.au>
+Description: Implementation of sparse group subgroup Partial Least Squares.
+    Designed for variable selection at a group, subgroup and individual level.
+License: GPL (>= 2.0)
+Imports: Rcpp (>= 0.12.14),
+         MASS,
+         sgPLS
+LinkingTo: Rcpp, RcppArmadillo
+RoxygenNote: 6.0.1
