@@ -24,34 +24,24 @@
 #'   select in \eqn{X}-loadings. Default selects all groups.
 #' @param keepY Numeric vector of length \code{ncomp}, the number of groups to
 #'   select in \eqn{Y}-loadings. Default selects all groups.
-#' @param indiv.sparsity.x Individual sparisty parameter (value between 0 and 1)
+#' @param indiv_sparsity_x Individual sparisty parameter (value between 0 and 1)
 #'   related to the sparisty within subgroups for the \eqn{X} block.
-#' @param indiv.sparsity.y Individual sparisty parameter (value between 0 and 1)
+#' @param indiv_sparsity_y Individual sparisty parameter (value between 0 and 1)
 #'   related to the sparisty within subgroups for the \eqn{Y} block.
-#' @param subgroup.sparsity.x Sub-group sparisty parameter (value between 0 and
+#' @param subgroup_sparsity_x Sub-group sparisty parameter (value between 0 and
 #'   1) related to the number of subgroups selected for the PLS \eqn{X} weights.
-#' @param subgroup.sparsity.y Sub-group sparisty parameter (value between 0 and
+#' @param subgroup_sparsity_y Sub-group sparisty parameter (value between 0 and
 #'   1) related to the number of subgroups selected for the PLS \eqn{Y} weights.
 #' @param scale.x Scale predictors by their standard deviation.
 #' @param scale.y Scale responses by their standard deviation.
 #'
 #' @export
 #' @return \code{sgspls} returns an object of class \code{"sgspls"}, a list that
-#' contains the following components: \item{X}{The centered (and standardized)
-#' original predictor matrix.} \item{Y}{The centered (and standardized) original
-#' predictor matrix.} \item{ncomp}{The number of components included in the
-#' model.} \item{mode}{The type of PLS algorithm.} \item{keepX}{Number of
-#' \eqn{X} groups kept in the model on each component.} \item{keepY}{Number of
-#' \eqn{Y} groups kept in the model on each component.} \item{mat.c}{Matrix of
-#' coefficients to be used internally by \code{predict}.} \item{variates}{List
-#' containing the variates.} \item{loadings}{List containing the estimated
-#' loadings for the \eqn{X} and \eqn{Y} variates.} \item{names}{List containing
-#' the names to be used for individuals and variables.} \item{tol}{The tolerance
-#' used in the iterative algorithm, used for subsequent S3 methods.}
-#' \item{max.iter}{The maximum number of iterations, used for subsequent S3
-#' methods.} \item{iter}{Vector containing the number of iterations for
-#' convergence in each component.} \item{parameters}{List containing the
-#' parameters of the model that was fitted.}
+#' contains the following components: 
+#' \item{weights}{a list containing the X and Y pls weights.} 
+#' \item{scores}{a list containing the X and Y pls scores.} 
+#' \item{names}{a list containing the X and Y names.} 
+#' \item{parameters}{a list containing the parameters of the model that was fitted.}
 #'
 #' @author Matthew Sutton \email{m5.sutton@hdr.qut.edu.au}
 #' @references Liquet Benoit, Lafaye de Micheaux, Boris Hejblum, Rodolphe
@@ -69,30 +59,36 @@
 #'   Tenenhaus, M. (1998). \emph{La r\'egression PLS: th\'eorie et pratique}.
 #'   Paris: Editions Technic.
 #'
-#' @seealso Tuning functions \code{\link{sgspls.tune.groups}},
-#' \code{\link{sgspls.tune}}, \code{\link{predict}}, \code{\link{perf}} and
-#' functions from \code{mixOmics} package: \code{summary}, \code{plotIndiv},
-#' \code{plotVar}, \code{plot3dIndiv}, \code{plot3dVar}.
+#' @seealso Tuning functions \code{\link{calc_pve}},
+#' \code{\link{tune_sgspls}}, \code{\link{tune_groups}}. 
+#' Model performance and estimation  \code{\link{predict}}, \code{\link{perf.sgspls}}, \code{\link{coeff.sgspls}} 
 #'
 #' @examples
 #'
-#' n = 100; p = 200; size.groups = 25; size.subgroups = 5
+#' set.seed(1)
+#' n = 50; p = 500; 
+#' 
+#' size.groups = 30; size.subgroups = 5
 #' groupX <- ceiling(1:p / size.groups)
 #' subgroupX <- ceiling(1:p / size.subgroups)
+#' 
 #' X = matrix(rnorm(n * p), ncol = p, nrow = n)
-#'
+#' 
 #' beta <- rep(0,p)
 #' bSG <- -2:2; b0 <- rep(0,length(bSG))
-#' betaG <- c(bSG, b0, bSG, b0, b0)
+#' betaG <- c(bSG, b0, bSG, b0, bSG, b0)
 #' beta[1:size.groups] <- betaG
-#'
+#' 
 #' y = X %*% beta + 0.1*rnorm(n)
-#'
+#' 
 #' model <- sgspls(X, y, ncomp = 3, mode = "regression", keepX = 1,
-#'                        groupX = groupX, subgroupX = subgroupX,indiv.sparsity.x = 0.8,
-#'                        subgroup.sparsity.x = 0.15, penalty = "sgsgPLS")
-#' predict(model, X)
-#' coef(model)
+#'                 groupX = groupX, subgroupX = subgroupX,
+#'                 indiv_sparsity_x = 0.8, subgroup_sparsity_x = 0.15)
+#'
+#' reg_coef <- coef(model, type = "coefficients")
+#'
+#' # Check model fit
+#' cbind(reg_coef$B[ , , 3], beta)
 #'
 #' \dontrun{
 #' cbind(model.sgsplsR$B.hat[,,3], beta)[1:30,]
@@ -100,62 +96,82 @@
 
 
 sgspls <-
-  function(X, Y, ncomp = 2, mode = c("regression", "canonical"),max.iter = 500,  keepX = NA,
-           keepY = NA, groupX = rep(1,ncol(X)), groupY = rep(1,ncol(Y)),
+  function(X, Y, ncomp = 2, mode = "regression",  
+           keepX = NA, keepY = NA, max.iter = 500,
+           tol = 1e-12, scale.x = T, scale.y = F,
+           groupX = rep(1,ncol(X)), groupY = rep(1,ncol(Y)),
            subgroupX = rep(1,ncol(X)), subgroupY = rep(1,ncol(Y)),
-           indiv.sparsity.x = rep(0,ncomp), subgroup.sparsity.x = rep(0,ncomp),
-           indiv.sparsity.y = rep(0,ncomp), subgroup.sparsity.y = rep(0,ncomp),
-           tol = 1e-12, scale.x = T, scale.y = T, newtry = F,
+           indiv_sparsity_x = rep(0,ncomp), subgroup_sparsity_x = rep(0,ncomp),
+           indiv_sparsity_y = rep(0,ncomp), subgroup_sparsity_y = rep(0,ncomp),
            ...)
   {
+    
+    # Check the data #
+    X = as.matrix(X)
+    Y = as.matrix(Y)
+    p = ncol(X); q = ncol(Y); n = nrow(X);
+    
+    if (any(!is.finite(Y))) stop("\ninfinite, NA or NaN values in X or Y")
+    
+    if (is.null(colnames(X))) colnames(X) = paste(rep("X",p), 1:p, sep="")
+    if (is.null(rownames(X))) rownames(X) = rep(1:n)
+    
+    if (is.null(colnames(Y))) colnames(Y) = paste(rep("Y",q), 1:q, sep="")
+    if (is.null(rownames(Y))) rownames(Y) = rep(1:n)
 
-    # Repeat parameters if left missing
-    ngY <- length(unique(groupY))
+    # Add group information
     ngX <- length(unique(groupX))
+    ngY <- length(unique(groupY))
+    
+    # Fix number of selected groups
     if(is.na(keepY[1])) keepY <- ngY
     if(is.na(keepX[1])) keepX <- ngX
-    keepX = add.penalty.param(keepX,ncomp)
-    keepY = add.penalty.param(keepY,ncomp)
-    indiv.sparsity.x = add.penalty.param(indiv.sparsity.x,ncomp)
-    subgroup.sparsity.x = add.penalty.param(subgroup.sparsity.x,ncomp)
-    indiv.sparsity.y = add.penalty.param(indiv.sparsity.y,ncomp)
-    subgroup.sparsity.y = add.penalty.param(subgroup.sparsity.y,ncomp)
+    
+    # Repeat arguments to match ncomp length
+    keepX <- rep_param(keepX, ncomp)
+    keepY <- rep_param(keepY, ncomp)
+    
+    indiv_sparsity_x <- rep_param(indiv_sparsity_x,ncomp)
+    subgroup_sparsity_x <- rep_param(subgroup_sparsity_x,ncomp)
+    
+    indiv_sparsity_y <- rep_param(indiv_sparsity_y,ncomp)
+    subgroup_sparsity_y <- rep_param(subgroup_sparsity_y,ncomp)
 
     # Set the alphas for the sparsity values
     # There must be positive penalty on the group so that the keepX and keepY parameters work
-    alpha1.x <- 1 - rowSums(cbind(matrix(indiv.sparsity.x, ncol = 1), matrix(subgroup.sparsity.x, ncol = 1)))
+    alpha1.x <- 1 - rowSums(cbind(matrix(indiv_sparsity_x, ncol = 1), matrix(subgroup_sparsity_x, ncol = 1)))
 
     if(any(alpha1.x == 0)){
       ind <- which(alpha1.x == 0)
       alpha1.x[ind] <- 1e-06
       for (i in ind){
-        if(indiv.sparsity.x[ind] < subgroup.sparsity.x[ind]) {
-          subgroup.sparsity.x[ind] = subgroup.sparsity.x[ind] - 1e-06
+        if(indiv_sparsity_x[ind] < subgroup_sparsity_x[ind]) {
+          subgroup_sparsity_x[ind] = subgroup_sparsity_x[ind] - 1e-06
         } else{
-          indiv.sparsity.x[ind] = indiv.sparsity.x[ind] - 1e-06
+          indiv_sparsity_x[ind] = indiv_sparsity_x[ind] - 1e-06
         }
       }
     }
-    alpha2.x <- subgroup.sparsity.x
-    alpha3.x <- indiv.sparsity.x
+    alpha2.x <- subgroup_sparsity_x
+    alpha3.x <- indiv_sparsity_x
 
-    alpha1.y <- 1 - rowSums(cbind(indiv.sparsity.y, subgroup.sparsity.y))
+    alpha1.y <- 1 - rowSums(cbind(indiv_sparsity_y, subgroup_sparsity_y))
     alpha1.y <- pmax(alpha1.y, 1e-6)
 
     if(any(alpha1.y == 0)){
       ind <- which(alpha1.x == 0)
       alpha1.x[ind] <- 1e-06
       for (i in ind){
-        if(indiv.sparsity.x[ind] < subgroup.sparsity.x[ind]) {
-          subgroup.sparsity.x[ind] = subgroup.sparsity.x[ind] - 1e-06
+        if(indiv_sparsity_x[ind] < subgroup_sparsity_x[ind]) {
+          subgroup_sparsity_x[ind] = subgroup_sparsity_x[ind] - 1e-06
         } else{
-          indiv.sparsity.x[ind] = indiv.sparsity.x[ind] - 1e-06
+          indiv_sparsity_x[ind] = indiv_sparsity_x[ind] - 1e-06
         }
       }
     }
 
-    alpha2.y <- subgroup.sparsity.y
-    alpha3.y <- indiv.sparsity.y
+    alpha2.y <- subgroup_sparsity_y
+    alpha3.y <- indiv_sparsity_y
 
     if(any(round(rowSums(cbind(alpha1.x, alpha2.x, alpha3.x)),6) != 1)) stop("Sparsities don't sum to 1 on X")
     if(any(round(rowSums(cbind(alpha1.y, alpha2.y, alpha3.y)),6) != 1)) stop("Sparsities don't sum to 1 on Y")
@@ -173,32 +189,15 @@ sgspls <-
       alpha3.x <- add.args$alpha3.x
     }
 
-    # Check the data #
-    X = as.matrix(X)
-    Y = as.matrix(Y)
-    p = ncol(X); q = ncol(Y); n = nrow(X);
-
-#    if (p == 1 || q < 1) stop("\nBlock X must contain more than one column")
-#    if (nrow(Y) != n)  stop("\nX and Y have different number of rows")
-    if (any(!is.finite(Y))) stop("\ninfinite, NA or NaN values in X or Y")
-
-    if (is.null(colnames(X))) colnames(X) = paste(rep("X",p), 1:p, sep="")
-    if (is.null(rownames(X))) rownames(X) = rep(1:n)
-
-    if (is.null(colnames(Y))) colnames(Y) = paste(rep("Y",q), 1:q, sep="")
-    if (is.null(rownames(Y))) rownames(Y) = rep(1:n)
-
     # Scaleing similar to the pls package #
     Y_h <- scale(Y, center = T, scale = scale.y)
     X_h <- scale(X, center = T, scale = scale.x)
 
-    mat.t <- matrix(nrow=n, ncol = ncomp) # X variate
-    mat.u <- matrix(nrow=n, ncol = ncomp) # Y variate
-    load.u <- matrix(nrow = p, ncol = ncomp)
-    load.v <- matrix(nrow = q, ncol = ncomp)
-    mat.c <-matrix(nrow = p, ncol = ncomp)
-    mat.d <- matrix(nrow = q, ncol = ncomp)
-    mat.e <- matrix(nrow = q, ncol = ncomp)
+    x_scores <- matrix(nrow=n, ncol = ncomp) # X variate
+    y_scores <- matrix(nrow=n, ncol = ncomp) # Y variate
+
+    x_weights <- matrix(nrow=p, ncol = ncomp) 
+    y_weights <- matrix(nrow=q, ncol = ncomp) 
 
     # Algorithm #
     for(h in 1:ncomp){
@@ -218,28 +217,33 @@ sgspls <-
         break
       }
 
-      # Calaulate the loadings
-      res.load <- group.sparse.subgroup.penalty(M = M,svd.M = svd.M,keepX = keepX[h],keepY = keepY[h],groupX = groupX,
+      # Calaulate the weights
+      weights <- cal_weights(M = M,svd.M = svd.M,keepX = keepX[h],keepY = keepY[h],groupX = groupX,
                                                 groupY = groupY,subgroupX = subgroupX,subgroupY = subgroupY,alpha1.x = alpha1.x[h],
                                                 alpha2.x = alpha2.x[h],alpha1.y = alpha1.y[h],alpha2.y = alpha2.y[h],tol, max.iter,
-                                                lambda.x = lambda.x[h], lambda.y = lambda.y[h],newtry=newtry)
-      load.u[,h] <- res.load$u
-      load.v[,h] <- res.load$v
+                                                lambda.x = lambda.x[h], lambda.y = lambda.y[h])
+      x_weights[,h] <- weights$x
+      y_weights[,h] <- weights$y
 
       # calculate loadings, scores and deflate X & Y
-      res.deflat <- deflate.pls(X=X_h,Y=Y_h,res.load$u,res.load$v,mode=mode)
-      mat.t[,h] <- X_h%*%matrix(res.load$u,ncol = 1)
-      mat.u[,h] <- Y_h%*%matrix(res.load$v,ncol = 1)
-      X_h <- res.deflat$X_h
-      Y_h <- res.deflat$Y_h
-      mat.c[,h] <- res.deflat$c
-      if (mode=="regression") mat.d[,h] <- res.deflat$d else mat.e[,h] <- res.deflat$e
+      x_scores[,h] <- x_score <- X_h %*% weights$x
+      y_scores[,h]  <- y_score <- Y_h %*% weights$y
+      
+      ### Deflation step
+      proj_x <- diag(1,n,n) - tcrossprod(x_score)/drop(crossprod(x_score))
+      X_h <- proj_x %*% X_h
+      
+      if (mode=="regression") {
+        Y_h <- proj_x %*% Y_h
+        }
+      else 
+        {
+          proj_y <- diag(1,n,n) - tcrossprod(y_score)/drop(crossprod(y_score))
+          Y_h <- proj_y %*% Y_h
+        }
     }
 
     cl = match.call()
-    if (is.null(keepY)){
-      keepY <- rep(length(unique(groupY)),ncomp)
-    }
 
     # Save parameters for quick code in perf and tunning functions
     parameters <- list(X=X,
@@ -251,13 +255,13 @@ sgspls <-
                        keepY=keepY,
                        groupX = groupX, groupY = groupY,
                        subgroupX = subgroupX, subgroupY = subgroupY,
-                       indiv.sparsity.x = indiv.sparsity.x, subgroup.sparsity.x = subgroup.sparsity.x,
-                       indiv.sparsity.y = indiv.sparsity.y, subgroup.sparsity.y = subgroup.sparsity.y,
+                       indiv_sparsity_x = indiv_sparsity_x, subgroup_sparsity_x = subgroup_sparsity_x,
+                       indiv_sparsity_y = indiv_sparsity_y, subgroup_sparsity_y = subgroup_sparsity_y,
                        tol = tol, scale.x = scale.x, scale.y = scale.y,
                        X.residuals = X_h, Y.residuals = Y_h)
 
-    result <- list(call = cl,X=X,Y=Y, ncomp=ncomp,mode=mode,keepX=keepX,keepY=keepY,mat.c=mat.c,mat.d=mat.d,mat.e=mat.e,loadings = list(X = load.u, Y = load.v),variates = list(X = mat.t, Y = mat.u),
-                   names = list(X = colnames(X),Y = colnames(Y), indiv = rownames(X)),tol=tol,max.iter=max.iter,parameters=parameters)
+    result <- list(call = cl, weights = list(X = x_weights, Y = y_weights), scores = list(X = x_scores, Y = y_scores),
+                   names = list(X = colnames(X),Y = colnames(Y), indiv = rownames(X)), parameters=parameters)
     class(result) = c("sgspls")
     return(invisible(result))
   }

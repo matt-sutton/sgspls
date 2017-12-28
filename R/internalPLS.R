@@ -12,10 +12,10 @@
 NULL
 
 #' @rdname sgspls-internal
-group.sparse.subgroup.penalty <- function(M,svd.M,keepX=NA,keepY=NA,groupX=NA,groupY=NA,subgroupX=NA,subgroupY=NA,
+cal_weights <- function(M,svd.M,keepX=NA,keepY=NA,groupX=NA,groupY=NA,subgroupX=NA,subgroupY=NA,
                                           alpha1.x=0,alpha2.x=0,alpha1.y=0,alpha2.y=0,tol=1e-06,max.iter=500,
-                                          lambda.x=0, lambda.y=0, newtry = T){
-  #
+                                          lambda.x=0, lambda.y=0){
+
   u <- uold <- matrix(svd.M$u)
   v <- vold <- matrix(svd.M$v)
 
@@ -28,13 +28,16 @@ group.sparse.subgroup.penalty <- function(M,svd.M,keepX=NA,keepY=NA,groupX=NA,gr
   ngx = length(unique(groupX)); ngy = length(unique(groupY))
   gx = ngx - keepX; gy = ngy - keepY;
   GX = GY = NULL
-  Mv = M%*%vold
-  Mu = t(M)%*%uold
+  Mv = M %*% vold
+  Mu = t(M) %*% uold
 
   # A good initiall guess for the value setting the weights to 0
-  lamb.upper.x = min( 4*max(abs(Mv)+100)/abs(1-alpha1.x - alpha2.x), 10^5)
-  lamb.upper.y = min( 4*max(abs(Mu)+100)/abs(1-alpha1.y - alpha2.y), 10^5)
-
+  lamb.upper.x = 2*max(abs(Mv))/abs(1-alpha1.x - alpha2.x) + 1
+  lamb.upper.x = min(lamb.upper.x, 10^5)
+  
+  lamb.upper.y = 2*max(abs(Mu))/abs(1-alpha1.y - alpha2.y) + 1
+  lamb.upper.y = min(lamb.upper.x, 10^5)
+  
   gXunique = unique(groupX)
   gYunique = unique(groupY)
 
@@ -58,26 +61,15 @@ group.sparse.subgroup.penalty <- function(M,svd.M,keepX=NA,keepY=NA,groupX=NA,gr
         ind = which(groupX == gXunique[k])
         GX = c(GX, uniroot(lambdazerosubgroup, lower=0, upper=lamb.upper.x, Mx=Mv[ind], subgroupX=subgroupX[ind], alpha1=alpha1.x,alpha2=alpha2.x,tol = tol)$root)
       }
-      lu <- min(sort(GX)[gx+1], max(GX), na.rm = T)
-      ll <- max(sort(GX)[gx], 0, na.rm = T)
-
-      if(newtry){
-        lambda.x <- lambda1 <- ll #+ abs(lu-ll)*(1-alpha1.x) #ll
-        #cat("a",alpha1.x,"l",lambda.x,"\n")
-      } else{
-        lambda1 <- ll
-      }
-      #cat(ll,lu,lambda1,"\n")
+      lambda.x <- lambda1 <- max(sort(GX)[gx], 0, na.rm = T)
     }
     # Updata u (calls Cpp funciton)
     u = if (penaliseX) updataU(Mx = Mv,groupX,subgroupX,lambda1,alpha1.x,alpha2.x ) else Mv
-    #cat("u",u,"\n")
-    #cat("alpha3", 1 - alpha1.x - alpha2.x)
-    u = u/e.norm(u)
+    u = scale_vec(u, scale = 0.5)
 
     # Update Y-weights (v)
     GY = NULL
-    Mu = t(M)%*%uold
+    Mu = t(M) %*% uold
 
     # find lambda corresponding to Y group number
     if(penaliseY & lambda.y == 0){
@@ -85,42 +77,64 @@ group.sparse.subgroup.penalty <- function(M,svd.M,keepX=NA,keepY=NA,groupX=NA,gr
         ind = which(groupY == gYunique[ell])
         GY = c(GY, uniroot(lambdazerosubgroup, lower=0, upper=lamb.upper.y, Mx=Mu[ind], subgroupX=subgroupY[ind], alpha1=alpha1.y,alpha2=alpha2.y, tol = tol)$root)
       }
-      lu <- min(sort(GY)[gy+1], max(GY), na.rm = T)
-      ll <- max(sort(GY)[gy], 0, na.rm = T)
-
-      lambda1 = ll
+      lambda.y <- lambda2 <- max(sort(GY)[gy], 0, na.rm = T)
     }
     # Updata v (calls Cpp funciton)
     v = if (penaliseY) updataU(Mx = Mu,groupY,subgroupY,lambda2,alpha1.y,alpha2.y ) else Mu
-    v = v/e.norm(v)
+    v = scale_vec(v, scale = 0.5)
     # Check convergence
-    if (e.norm(u-uold,exact=T)/e.norm(u)+e.norm(v-vold,exact=T)/e.norm(v) < tol || ittr >= max.iter || all(u==0)&all(v==0)) {break}
+    if (crossprod(u-uold)+crossprod(v-vold) < tol || ittr >= max.iter || all(u==0)&all(v==0)) {break}
     uold = u; vold = v
   }
-  return(list(u=u,v=v,lambda.x = lambda1, lambda.y = lambda2))
-  #return(list(u=u,v=v))
+  return(list(x=u,y=v,lambda.x = lambda1, lambda.y = lambda2))
 }
 
-#' @rdname sgspls-internal
-deflate.pls <- function(X,Y,u,v,mode){
-  ### Step d
-  xi.h <- X%*% matrix(u,ncol=1)/e.norm(u)^2
-  w.h  <- Y%*% matrix(v,ncol=1)/e.norm(v)^2
-
-  ### Step e
-  c.h <- t(X)%*%matrix(xi.h,ncol=1)/e.norm(xi.h)^2
-
-  d.rh <- t(Y)%*%matrix(xi.h,ncol=1)/(sum(xi.h*xi.h) + (sum(xi.h)==0)*1e-16)
-
-  d.h <- t(Y)%*%matrix(w.h,ncol=1)/(sum(w.h*w.h) + (sum(w.h)==0)*1e-16)
-
-  ###Step f and g
-  X_h <- X - xi.h%*%t(c.h)
-  if (mode=="regression") Y_h <- Y - xi.h%*%t(d.rh) else Y_h <- Y - w.h%*%t(d.h)
-
-  res <- list(X_h=X_h,Y_h=Y_h,c=c.h,d=d.rh,e=d.h)
-  return(res)
-}
 
 #' @rdname sgspls-internal
 checkalphas <- function(alpha)  return(pmin(pmax(alpha,0),0.9999999)) # alpha kept between 0 and 0.99999
+
+
+#' Get the alpha values corresponding to the required sparsity
+#'
+#' Checks the sparsity levels are correct and returns 
+#' corresponding alpha values. Alpha values should add to one.
+#' The values correspond to the percentage of penalty put on each 
+#' of the penalised terms in the sgspls penalty.
+#' Current implementation forces some penalisation on the group component.
+#'
+#' @param  indiv_sparsity matrix of values between 0 and 1 for the individual sparsity penalty per component
+#' @param  subgroup_sparsity matrix of values between 0 and 1 for the subgroup sparsity penalty per component
+#' 
+#' @export
+#' 
+#' @examples
+#'
+#' # Return the alphas used for the required sparsities
+#' get_alphas(indiv_sparsity = c(0.4,0), subgroup_sparsity = c(0.2,1))
+#' 
+
+
+get_alphas <- function(indiv_sparsity, subgroup_sparsity){
+  
+  alpha1 <- 1 - rowSums(cbind(indiv_sparsity, subgroup_sparsity))
+  alpha2 <- subgroup_sparsity
+  alpha3 <- indiv_sparsity
+  
+  #-- Find which components have no group penalty --#
+  nogroup <- which(alpha1 < 1e-6)
+  
+  #-- Set group penalty --#
+  for(i in nogroup)
+    {
+    alpha1[i] <-  1e-6
+    alpha2[i] <- alpha2[i] - alpha2[i]*1e-6
+    alpha3[i] <- alpha3[i] - alpha3[i]*1e-6
+  }
+  
+  res <- list(alpha1 = alpha1, 
+              alpha2 = alpha2, 
+              alpha3 = alpha3)
+  return(res)
+}
+
+

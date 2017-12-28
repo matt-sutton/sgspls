@@ -2,17 +2,14 @@
 % Please edit documentation in R/internalPLS.R
 \name{sgspls-internal}
 \alias{sgspls-internal}
-\alias{group.sparse.subgroup.penalty}
-\alias{deflate.pls}
+\alias{cal_weights}
 \alias{checkalphas}
 \title{Internal sgspls functions}
 \usage{
-group.sparse.subgroup.penalty(M, svd.M, keepX = NA, keepY = NA,
-  groupX = NA, groupY = NA, subgroupX = NA, subgroupY = NA,
-  alpha1.x = 0, alpha2.x = 0, alpha1.y = 0, alpha2.y = 0, tol = 1e-06,
-  max.iter = 500, lambda.x = 0, lambda.y = 0, newtry = T)
-
-deflate.pls(X, Y, u, v, mode)
+cal_weights(M, svd.M, keepX = NA, keepY = NA, groupX = NA, groupY = NA,
+  subgroupX = NA, subgroupY = NA, alpha1.x = 0, alpha2.x = 0,
+  alpha1.y = 0, alpha2.y = 0, tol = 1e-06, max.iter = 500,
+  lambda.x = 0, lambda.y = 0)
 
 checkalphas(alpha)
 }

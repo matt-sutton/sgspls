@@ -160,26 +160,29 @@ select.sgspls <- function (model, module, gene, time) {
 }
 
 # Duplicate penalty parameter to match the number of components
-add.penalty.param <- function(arg, ncomp){
+rep_param <- function(arg, ncomp){
   if(ncomp != length(arg)){
     arg = rep(arg, length.out = ncomp)
   }
   return(arg)
 }
 
-#' Compute the euclidian norm
+#' Compute scaled vector multiplicaiton 
 #'
-#' Computes the L2-norm of a vector \code{x}. A float 1e-16 is returned if the
-#' exact value is 0 so that division in the PLS algorithm is well defined.
+#' Return multiplation of a matrix by scaled vector
+#' return 0 vector if scale is zero (avoid division by zero).
 #'
-#' @param x A vector of numeric variables
+#' @param M n x p matrix of numeric variables
+#' @param u p vector of numeric variables
 #'
-#' @return Output will be a length-one numeric.
+#' @return Output will be a numeric matrix or vector.
 #'
 
-e.norm <- function(x, exact=FALSE){
-  res = sqrt(drop(crossprod(x)))
-  if(!exact) res = res+(res==0)*1
+scale_vec <- function(u, scale = 1){
+  p <- length(u)
+  scale_factor <- drop(crossprod(u)^scale)
+  
+  res <- if (scale_factor > 10e-8)  u/scale_factor else matrix(rep(0, p), nrow = p)
   return(res)
 }
 
@@ -237,18 +240,18 @@ plot.cv.sgspls <- function(obj, verbose = T){
     library(knitr)
     cat("\n ========================================== \n")
     cat("\n",obj$folds,"fold Cross Validation for sgspls \n\n")
-    nalpha <- length(obj$tuning.parameters[,1])
+    nalpha <- length(obj$tuning_sparsities[,1])
 
     cat( " Tuning Parameters:")
-    table <- data.frame(Legend = paste("alpha",1:nalpha,sep = "_"),obj$tuning.parameters)
+    table <- data.frame(Legend = paste("alpha",1:nalpha,sep = "_"),obj$tuning_sparsities)
     print(kable(table, format = "pandoc"))
     cat("\n ========================================== \n")
   }
 
   legendVal <- parse(text = paste("alpha[",1:nalpha,"]",sep=""))
-  group.seq <- obj$group.seq
-  cv.scores <- obj$results.tuning[,4]
-  cv.scores <- matrix(cv.scores, nrow = length(group.seq), ncol = nalpha)
+  group_seq <- obj$group_seq
+  cv.scores <- obj$results_tuning[,4]
+  cv.scores <- matrix(cv.scores, nrow = length(group_seq), ncol = nalpha)
   minalpha <- which(cv.scores == min(cv.scores), arr.ind = T)[2]
   alphawidth <- rep(1,nalpha)
   alphawidth[minalpha] <- 3
@@ -265,7 +268,7 @@ plot.cv.sgspls <- function(obj, verbose = T){
   }
 
   placement <- if(placement) "topright" else "bottomright"
-  matplot(group.seq,cv.scores,type="l",ylab="MSEP",ylim = c(miny,maxy),
+  matplot(group_seq,cv.scores,type="l",ylab="MSEP",ylim = c(miny,maxy),
           pch=1,col=rainbow(nalpha),lty=1:nalpha,lwd=1.5*alphawidth,xlab="Number of groups")
 
   # How many colums to use <10 = 1, <20 = 2, <30 = 3, otherwise 4.

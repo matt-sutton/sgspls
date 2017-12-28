@@ -4,7 +4,7 @@
 \alias{select.sgspls}
 \title{Find selected Modules, Genes and Times}
 \usage{
-\method{select}{sgspls}(model, module, gene, time)
+select.sgspls(model, module, gene, time)
 }
 \arguments{
 \item{model}{object of class inhereting from "sgspls".}

@@ -1,385 +1,232 @@
 
 perf = function(object, ...) UseMethod("perf")
 
-## A quick function to calulate repeated cross validation for the perf function
-rperf <- function(object, folds = 10, progressBar = T, nrepeats = 10, choicesetseed = 1){
- if("sgspls.groups" %in% class(object)){
-    nrows = ncol(object$parameters$Y)
-    ncols = length(object$group.seq)
-    parameters = object$group.seq
-  } else {
-    nrows = ncol(object$Y)
-    ncols = object$ncomp
-    parameters = 1:ncols
-  }
 
-  if (progressBar == TRUE)
-    pb <- txtProgressBar(style = 3)
+#' Performance evaluation of sgsPLS objects
+#'
+#' Function to evaluate the performance of the fitted the PLS models using various criteria. 
+#' Evaluation is made for each component in the PLS object and can only be evaluated for regression PLS.
+#'
+#' @param object Object of class inheriting from \code{"sgspls"}. 
+#' The function will retrieve some key parameters stored in that object.
+#' @param validation What kind of cross validation to use, matching one of \code{"Mfold"} or 
+#' \code{"loo"} (leave one out). Default is \code{"Mfold"}.
+#' @param folds Number of folds to use in the cross validation.
+#' @param BIC Return the BIC type criterion for large sample sizes (see paper for details). 
+#' Note that this is not an actual BIC criterion.
+#' @param progressBar Logical to show a progress bar while computing the performances
+#' @param scale_resp Logical to scale the responses. This is useful if comparing the fit on 
+#' multiple responses.
+#' 
+#' @export
+#' @return \code{perf} returns a list that contains the following performance measures: 
+#' 
+#' \item{MSEP}{A matrix of Mean Square Error of Prediction (MSEP) estimates by cross validation. The penalty is defined
+#' as: \deqn{MSEP = 1/n \sum \sum (f_k(x_i) - y_i)^2} see the references for details. }
+#' \item{PRESS0}{A vector of cross validated Predictive Residual Sum of Squares (PRESS) values. 
+#' Each column corresponds to a response. Matches the PLS package.}
+#' \item{PRESS}{A matrix of cross validated Predictive Residual Sum of Squares (PRESS) values. 
+#' Each row contains the values for a different component and each column corresponds to a response.} 
+#' \item{R2}{a matrix of \eqn{R^2} values of the \eqn{Y}-variables with \code{ncomp} components} 
+#' \item{BIC}{A BIC type criterion for large samples (see references for details). 
+#' Note that this is not an actual BIC criterion.} 
+#' \item{cvPred}{an array with the cross-validated predictions.}
+#' \item{folds}{A list of the folds used in the cross validation.}
+#' 
+#' @references Mevik, Bjørn-Helge, and Henrik René Cederkvist. 2004. 
+#'   Mean Squared Error of Prediction (MSEP) Estimates for Principal Component Regression (PCR) 
+#'   and Partial Least Squares Regression (PLSR). 
+#'   \emph{Journal of Chemometrics} \bold{18} (9). John Wiley & Sons, Ltd.:422–29.
+#'   
+#' @seealso Tuning functions \code{\link{calc_pve}},
+#' \code{\link{tune_sgspls}}, \code{\link{tune_groups}}. 
+#' Model performance and estimation  \code{\link{predict.sgspls}}, \code{\link{perf.sgspls}}, \code{\link{coeff.sgspls}} 
 
-  choicesetseed <- choicesetseed
+#' 
+#' @examples
+#'
+#' set.seed(1)
+#' n = 50; p = 500; 
+#' 
+#' size.groups = 30; size.subgroups = 5
+#' groupX <- ceiling(1:p / size.groups)
+#' subgroupX <- ceiling(1:p / size.subgroups)
+#' 
+#' X = matrix(rnorm(n * p), ncol = p, nrow = n)
+#' 
+#' beta <- rep(0,p)
+#' betaG <- c(bSG, b0, bSG, b0, bSG, b0)
+#' beta[1:size.groups] <- betaG
+#' 
+#' y = X %*% beta + 0.1*rnorm(n)
+#' 
+#' model <- sgspls(X, y, ncomp = 3, mode = "regression", keepX = 1,
+#'                 groupX = groupX, subgroupX = subgroupX,
+#'                 indiv_sparsity_x = 0.8, subgroup_sparsity_x = 0.15)
+#'
+#' model_perf <- perf(model, folds = 5)
+#'
+#' # Check model performance
+#' model_perf$MSEP
+#' 
 
-  mseps = matrix(0, nrow = nrows, ncol = ncols)
-  n <- nrow(object$parameters$Y)
-  press.mat <- array(NA, c(n*nrepeats, nrows, ncols))
-  for ( r in 1:nrepeats){
+perf.sgspls <- 
+  function (object, validation = c("Mfold","loo"), folds = 10, BIC = FALSE,
+            progressBar = TRUE, setseed = FALSE, scale_resp = FALSE) {
+    
+  if(setseed) set.seed(setseed)
+  pls_parameters = object$parameters
 
-    temp.valid <- perf(object, validation = "Mfold", criterion = "MSEP", folds = folds, setseed = choicesetseed, progressBar = F)
-    mseps <- mseps + temp.valid$MSEP
-    if(!is.null(temp.valid$press.mat)) press.mat[(1+(r-1)*n):(r*n), ,] <- temp.valid$press.mat
-    choicesetseed <- choicesetseed + 1
-
-    if (progressBar == TRUE)
-      setTxtProgressBar(pb, r/nrepeats)
-  }
-  mseps <- scale(mseps,center = F,scale = rep(nrepeats,ncols))
-  attr(mseps, "scaled:scale") = NULL
-  sMSEP = colSums(mseps)
-  opt.paramater = parameters[which.min(sMSEP)]
-  return(list(MSEP=mseps, press.mat=press.mat, opt.paramater = opt.paramater, press.mat=press.mat, bic = temp.valid$BIC))
-}
-
-
-## Perf for sgspls goes across the number of components
-perf.sgspls <- function (object, criterion = c("all", "MSEP", "R2", "Q2"), validation = c("Mfold",
-                                                                           "loo"), folds = 10, progressBar = TRUE, setseed = 1, ...) {
-  set.seed(setseed)
-  X = object$X#scale(object$X, center = T, scale = object$parameters$scale.x)
-  Y = object$Y #scale(object$Y, center = T, scale = object$parameters$scale.y)
-
-  ncomp = object$ncomp
-
-  pls.parameters = object$parameters
-
+  X = pls_parameters$X
+  Y = pls_parameters$Y
+  
+  ncomp = pls_parameters$ncomp
   n = nrow(X)
   p = ncol(X)
   q = ncol(Y)
-
-  res = list()
+  
   validation = match.arg(validation)
-  featuresX = featuresY = list()
-  for (k in 1:ncomp) {
-    featuresX[[k]] = featuresY[[k]] = NA
-  }
+  
+  #---------------------#
+  #-- check perf args --#
+  
   if(is.null(folds))
     stop("Enter a number of folds")
   if (length(dim(X)) != 2)
     stop("'X' must be a numeric matrix for validation.")
-  if (object$call$mode == "canonical")
+  if (object$parameters$mode == "canonical")
     stop("mode should be set to regression")
-  if (any(criterion == "Q2") & ncomp == 1)
-    stop("'ncomp' must be > 1 for Q2 criterion.")
   if (any(is.na(X)) || any(is.na(Y)))
     stop("Missing data in 'X' and/or 'Y'. Use 'nipals' for dealing with NAs.")
-  if (validation == "Mfold") {
-    if (is.list(folds)) {
-      if (length(folds) < 2 | length(folds) > n)
-        stop("Invalid number of folds.")
-      if (length(unique(unlist(folds))) != n)
-        stop("Invalid folds.")
-      M = length(folds)
-    }
-    else {
-      if (is.null(folds) || !is.numeric(folds) || folds <
-          2 || folds > n)
-        stop("Invalid number of folds.")
-      else {
-        M = round(folds)
-        folds = split(sample(1:n), rep(1:M, length = n))
+  
+  
+  #---------------------#
+  #-- define folds -----#
+  
+  if (validation == "Mfold") 
+    {
+      if (is.list(folds)) 
+        {
+        
+          if (length(folds) < 2 | length(folds) > n)
+          stop("Invalid number of folds.")
+        
+          if (length(unique(unlist(folds))) != n)
+          stop("Invalid folds. The total number of samples in folds must be equal to ",n,".")
+        
+          if (length(unique(unlist(folds))) != n)
+          stop("Invalid folds. Repeated samples in folds.")
+        
+          M = length(folds)
+          
+        } else {
+          
+          if (is.null(folds) || !is.numeric(folds) || folds < 2 || folds > n)
+            {
+              stop("Invalid number of folds.")
+            } else {
+              M = round(folds)
+              folds = split(sample(1:n), rep(1:M, length = n))
+            }
+        }
+    } else {
+      folds = split(1:n, rep(1:n, length = n))
+      M = n
       }
-    }
+  
+  #-- set-up progress bar --#
+  
+  if ( progressBar == TRUE )
+  {
+    pb <- txtProgressBar(style = 3)
   }
-  else {
-    folds = split(1:n, rep(1:n, length = n))
-    M = n
-  }
-  RSS = rbind(rep(n - 1, q), matrix(nrow = ncomp, ncol = q))
-  RSS.indiv = array(NA, c(n, q, ncomp + 1))
-  PRESS.inside = Q2.inside = matrix(nrow = ncomp, ncol = q)
-  if (any(criterion %in% c("all", "MSEP", "R2", "Q2"))) {
-    press.mat = Ypred = array(NA, c(n, q, ncomp))
-    MSEP = R2 = matrix(NA, nrow = q, ncol = ncomp)
-    rownames(MSEP) = rownames(R2) = colnames(Q2.inside) = colnames(Y)
-    dimnames(press.mat)[[2]] = as.list(colnames(Y))
-    stop.user = FALSE
+  
+  #-- initialise -----#
+
+  RSS <- rbind(rep(n - 1, q), matrix(nrow = ncomp, ncol = q))
+  PRESS <- Q2 <- MSEP <- R2 <- matrix(nrow = ncomp, ncol = q)
+  BIC_mat <- matrix(nrow = ncomp, ncol = 1)
+  
+  Ypred <- RSS_indiv <- array(NA, c(n, q, ncomp))
+  
+  #--------------------------------#
+  #-- loop for cross validation ---#
+  for (i in 1:M) {
+    
     if (progressBar == TRUE)
-      pb <- txtProgressBar(style = 3)
-    for (i in 1:M) {
-      if (progressBar == TRUE)
-        setTxtProgressBar(pb, i/M)
-      omit = folds[[i]]
-      if (length(omit) == 1)
-        stop.user = TRUE
-      X.train = X[-omit, ]
-      Y.train = Y[-omit, ]
-      X.test = matrix(X[omit, ], nrow = length(omit))
-      Y.test = matrix(Y[omit, ], nrow = length(omit))
-
-      pls.parameters$X = X.train
-      pls.parameters$Y = Y.train
-
-      spls.res = do.call(sgspls, args = pls.parameters)
-
-      Y.hat =  predict(spls.res, X.test)$predict
-      for (h in 1:ncomp) {
-        Ypred[omit, , h] = Y.hat[, , h]
-        press.mat[omit, , h] = (Y.test - Y.hat[, , h])^2
-        RSS.indiv[omit, , h + 1] = (Y.test - Y.hat[,
-                                                   , h])^2
-      }
+    {
+      setTxtProgressBar(pb, i/M)
     }
-    if (stop.user == TRUE & validation == "Mfold")
-      stop("The folds value was set too high to perform cross validation. Choose validation = \"loo\" or set folds to a lower value")
-    for (h in 1:ncomp) {
-      MSEP[, h] = apply(as.matrix(press.mat[, , h]), 2,
-                        mean, na.rm = TRUE)
-      R2[, h] = (diag(cor(Y, Ypred[, , h], use = "pairwise")))^2
-      if (q > 1) {
-        RSS[h + 1, ] = t(apply(RSS.indiv[, , h + 1],
-                               2, sum))
-        PRESS.inside[h, ] = colSums(press.mat[, , h],
-                                    na.rm = TRUE)
-      }
-      else {
-        RSS[h + 1, q] = sum(RSS.indiv[, q, h + 1])
-        PRESS.inside[h, q] = sum(press.mat[, q, h], na.rm = TRUE)
-      }
-      Q2.inside[h, ] = 1 - PRESS.inside[h, ]/RSS[h, ]
-    }
-    colnames(MSEP) = colnames(R2) = rownames(Q2.inside) = paste("ncomp",
-                                                                c(1:ncomp), sep = " ")
-    rownames(MSEP) = rownames(R2) = colnames(Q2.inside) = colnames(Y)
-    if (q == 1)
-      rownames(MSEP) = rownames(R2) = ""
-    if (ncomp > 1) {
-      if (q > 1) {
-        Q2.total = 1 - rowSums(PRESS.inside, na.rm = TRUE)/rowSums(RSS[-(ncomp +
-                                                                           1), ], na.rm = TRUE)
-      }
-      else {
-        Q2.total = t(1 - PRESS.inside/RSS[-(ncomp + 1),
-                                          ])
-      }
-    }
-    else {
-      Q2.total = NA
-    }
-    names(Q2.total) = paste("comp", 1:ncomp, sep = " ")
-  }
-
-
-  ### BIC type statistic
-
-  if (any(criterion %in% c("all", "BIC"))) {
-    # Calculations for scaled versions
-    #     means.X = attr(X, "scaled:center")
-    #     means.Y = attr(Y, "scaled:center")
-    #     sigma.X = attr(X, "scaled:scale")
-    #     sigma.Y = attr(Y, "scaled:scale")
-    #     if(is.null(sigma.X)) sigma.X <- 1
-    #     if(is.null(sigma.Y)) sigma.Y <- 1
-    #
-    #     X.org <- scale(X,center=FALSE,scale=1/sigma.X)
-    #     X.org <- scale(X.org,center=-means.X,scale=FALSE)
-    #     Y.org <- scale(Y,center=FALSE,scale=1/sigma.Y)
-    #     Y.org <- scale(Y.org,center=-means.Y,scale=FALSE)
-
-    Y.hat <- predict(object, X)$predict
-
-    BIC <- rep(0, ncomp)
-
-    # nonzY <-  list(which(abs(object$loadings$Y)>0))
-    # if(ncomp > 1){
-    #   nonzX <-  apply(object$loadings$X, 2, function(x) which(abs(x)>0))
-    #   nonzX <- Reduce(union, nonzX, accumulate = T)
-    #   nonzY <- apply(object$loadings$Y, 2, function(x) which(abs(x)>0))
-    #   nonzY <- Reduce(union, nonzY, accumulate = T)
-    # }
-    nonzX <- NULL
-
-    for (h in 1:ncomp) {
-      nonzX <- c(nonzX, which(abs(object$loadings$X[,h])>0))
-      nonzX <- unique(nonzX)
-      kappa <- length(nonzX)
-      rss.bic <- sum((Y - Y.hat[,,h])^2)
-
-      BIC[ h ] = (n*q)*log(rss.bic/(n*q)) + (2+kappa)*log(n*q)  + (n*q) + n*q*log(2*pi) ## additional terms to match stats::BIC call
+    
+    omit = folds[[i]]
+    X_train = X[-omit, ]
+    Y_train = Y[-omit, ]
+    X_test = matrix(X[omit, ], nrow = length(omit))
+    Y_test = matrix(Y[omit, ], nrow = length(omit))
+    
+    pls_parameters$X = X_train
+    pls_parameters$Y = Y_train
+    
+    #-- fit the PLS method using the cv dataset ---#
+    spls_res = do.call(sgspls, args = pls_parameters)
+    Y_hat =  predict(spls_res, X_test)
+    
+    #-- loop through h components ---#
+    for (h in 1:ncomp) 
+      {
+        Ypred[omit, , h] = Y_hat[, , h]
+        RSS_indiv[omit, , h] <- (Y_test - Y_hat[, , h])^2
     }
   }
+  
+  #-------------------------------------#
+  #-- calculate performance measures ---#
+  
+  PRESS0 <- apply(Y, 2, var) * n^2/(n-1)
+  nonzX <- NULL
+  Y_hat <- predict(object, X)
+  
+  for (h in 1:ncomp) 
+    {
+    
+    #-- calculate MSEP ---#
+    MSEP[ h, ] = apply(as.matrix(RSS_indiv[, , h]), 2, mean, na.rm = TRUE)
+    
+    #-- calculate R2 ---#
+    R2[ h, ] = (diag(cor(Y, Ypred[, , h], use = "pairwise")))^2
+    
+    #-- calculate Q2 ---#
+    PRESS[ h, ] <- colSums(as.matrix(RSS_indiv[, , h]), na.rm = TRUE)
+    
+    #-- BIC type statistic --#
+    if ( BIC ){
+      
+      nonzX <- c(nonzX, which(abs(object$weights$X[,h])>0))
+      kappa <- length(unique(nonzX))
+      rss_bic <- sum((Y - Y_hat[,,h])^2)
+      
+      BIC_mat[ h ] = (n*q)*log(rss_bic/(n*q)) + (2+kappa)*log(n*q)  + (n*q) + n*q*log(2*pi) 
+      ## additional terms to match stats::BIC call
+      }
+  }
+  
+  #-- Get multiple responses on the same scale (MSEP and PRESS) --#
+  if(scale_resp)
+    MSEP <- scale(MSEP, center = F, scale = diag(var(Y)))
+  
+  #-- Add dimnames --#
+  rownames(MSEP) <- rownames(R2) <- paste("ncomp", c(1:ncomp), sep = " ")
+  colnames(MSEP) <- colnames(R2) <- colnames(Y)
 
+  #-- Progress bar update --#  
   if (progressBar == TRUE)
     cat("\n")
-  list.featuresX = list.featuresY = list()
-  for (k in 1:ncomp) {
-    remove.naX = which(is.na(featuresX[[k]]))
-    remove.naY = which(is.na(featuresY[[k]]))
-    list.featuresX[[k]] = sort(summary(as.factor(featuresX[[k]][-remove.naX]))/M,
-                               decreasing = TRUE)
-    list.featuresY[[k]] = sort(summary(as.factor(featuresY[[k]][-remove.naY]))/M,
-                               decreasing = TRUE)
+  
+  res <- list(
+    MSEP = MSEP, PRESS0 = PRESS0, PRESS = PRESS, R2 = R2,
+    BIC = BIC_mat, cvPred = Ypred, folds = folds
+  )
+  
+  return(res)
   }
-  features.finalX = features.finalY = list()
-#   if(ncomp > 1){
-#     for (k in 1:ncomp) {
-#       if(packageVersion("mixOmics") >= 5.2){
-#         features.finalX[[k]] = selectVar(convert.package(object), comp = k)$X$value
-#         features.finalY[[k]] = selectVar(convert.package(object), comp = k)$Y$value
-#       } else {
-#         features.finalX[[k]] = selectVar(convert.package(object), comp = k)$value.X
-#         features.finalY[[k]] = selectVar(convert.package(object), comp = k)$value.Y
-#       }
-#     }
-#     names(features.finalX) = names(features.finalY) = names(list.featuresX) = names(list.featuresX) = paste("comp",
-#                                                                                                             1:ncomp)
-#   }
-
-  if (any(criterion %in% c("all", "MSEP"))) {
-    res$MSEP = MSEP
-    res$press.mat = press.mat
-    res$RSS.indiv = RSS.indiv
-    res$PRESS.inside = PRESS.inside
-    res$RSS = RSS
-    }
-  if (any(criterion %in% c("all", "R2"))) {
-    res$press.mat = press.mat
-    res$RSS.indiv = RSS.indiv
-    res$PRESS.inside = PRESS.inside
-    res$RSS = RSS
-    res$R2 = R2
-  }
-  if (any(criterion %in% c("all", "Q2"))) {
-    res$press.mat = press.mat
-    res$RSS.indiv = RSS.indiv
-    res$PRESS.inside = PRESS.inside
-    res$RSS = RSS
-    res$Q2 = t(Q2.inside)
-    res$Q2.total = Q2.total
-  }
-  if (any(criterion %in% c("all", "BIC")))
-    res$BIC = BIC
-  res$features$stable.X = list.featuresX
-  res$features$stable.Y = list.featuresY
-  res$features$final.X = features.finalX
-  res$features$final.Y = features.finalY
-  res$segments = folds
-  method = "pls.mthd"
-  class(res) = c("perf", method)
-  return(invisible(res))
-}
-
-
-# perf for testing across multiple tuning parameters (groups) for a fixed fold.
-
-perf.sgspls.groups <- function (object, validation = c("Mfold", "loo"), folds = 10, progressBar = TRUE, setseed = 1, ...) {
-  set.seed(setseed)
-
-  group.seq = object$group.seq
-  nonzero = object$nonzero
-  ngroups = length(group.seq)
-  parameters <- object$parameters
-  X = parameters$X#scale(parameters$X, center = T, scale = object$parameters$scale.x)
-  Y = parameters$Y #scale(parameters$Y, center = T, scale = object$parameters$scale.y)
-
-  object <- object$tuningparameters
-  object$group.seq <- group.seq
-  object$pls.obj <- parameters
-
-  n = nrow(X)
-  p = ncol(X)
-  q = ncol(Y)
-
-  res = list()
-  validation = match.arg(validation)
-
-  if(is.null(folds))
-    {stop("Enter a number of folds")}
-  if (length(dim(X)) != 2)
-    {stop("'X' must be a numeric matrix for validation.")}
-  if (validation == "Mfold") {
-    if (is.list(folds)) {
-      if (length(folds) < 2 | length(folds) > n) {
-        stop("Invalid number of folds.")
-      }
-      if (length(unique(unlist(folds))) != n) {
-        stop("Invalid folds.")
-      }
-      M = length(folds)
-    }    else {
-      if (is.null(folds) || !is.numeric(folds) || folds < 2 || folds > n) {
-        stop("Invalid number of folds.")
-      }  else {
-        M = round(folds)
-        folds = split(sample(1:n), rep(1:M, length = n))
-      }
-    }
-  }  else {
-    folds = split(1:n, rep(1:n, length = n))
-    M = n
-  }
-  PRESS.inside = matrix(nrow = ngroups, ncol = q)
-  press.mat = Ypred = array(NA, c(n, q, ngroups))
-  MSEP = R2 = matrix(NA, nrow = q, ncol = ngroups)
-  rownames(MSEP) = rownames(R2) = colnames(Y)
-  dimnames(press.mat)[[2]] = as.list(colnames(Y))
-  stop.user = FALSE
-  if (progressBar == TRUE)
-    pb <- txtProgressBar(style = 3)
-  #cat(M)
-  for (i in 1:M) {
-    if (progressBar == TRUE)
-      setTxtProgressBar(pb, i/M)
-    omit = folds[[i]]
-    if (length(omit) == 1)
-      stop.user = TRUE
-    X.train = X[-omit, ]
-    Y.train = Y[-omit, ]
-    X.test = matrix(X[omit, ], nrow = length(omit))
-    Y.test = matrix(Y[omit, ], nrow = length(omit))
-
-    object$pls.obj$X = X.train
-    object$pls.obj$Y = Y.train
-    object$newdata = X.test
-
-    spls.res = do.call(sgspls.tune.groups, args = object)
-    Y.hat = array(spls.res$predict, dim = c(nrow(X.test), q, ngroups))
-
-    for (h in 1:ngroups) {
-        Ypred[omit, , h] = Y.hat[, , h]
-        press.mat[omit, , h] = (Y.test - Y.hat[, , h])^2
-        }
-  }
-
-  if (stop.user == TRUE & validation == "Mfold") {
-    stop("The folds value was set too high to perform cross validation. Choose validation = \"loo\" or set folds to a lower value")
-  }
-  for (h in 1:ngroups) {
-      MSEP[, h] = apply(as.matrix(press.mat[, , h]), 2, mean, na.rm = TRUE)
-      R2[, h] = (diag(cor(Y, Ypred[, , h], use = "pairwise")))^2
-      if (q > 1) {
-        PRESS.inside[h, ] = colSums(press.mat[, , h],
-                                    na.rm = TRUE)
-      }
-      else {
-        PRESS.inside[h, q] = sum(press.mat[, q, h], na.rm = TRUE)
-      }
-    }
-    colnames(MSEP) = colnames(R2) = paste(group.seq)
-    rownames(MSEP) = rownames(R2) = colnames(Y)
-    if (q == 1){
-      rownames(MSEP) = rownames(R2) = ""
-    }
-    if (progressBar == TRUE)
-      cat("\n")
-
-
-    res$group.seq = group.seq
-    res$nonzero = nonzero
-    res$keepX = group.seq[which.min(colSums(MSEP))]
-    res$MSEP = MSEP
-    res$R2 = R2
-    res$press.mat = press.mat
-    res$PRESS.inside = PRESS.inside
-    method = "pls.mthd"
-    class(res) = c("perf", method)
-    return(invisible(res))
-    }
 

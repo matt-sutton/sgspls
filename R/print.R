@@ -1,21 +1,24 @@
 # print fit
 print.sgspls <-
-  function( x, ... )
+  function( object, ... )
   {
-    ncomp <- x$ncomp
-    mode <- x$mode
-    keepX <- x$keepX
-    keepY <- x$keepY
-    p <- ncol(x$X)
-    q <- ncol(x$Y)
-    groupX <- x$parameters$groupX
-    subgroupX <- x$parameters$subgroupX
-    groupY <- x$parameters$groupY
-    subgroupY <- x$parameters$subgroupY
-    indiv.sparsity.x <- x$parameters$indiv.sparsity.x
-    indiv.sparsity.y <- x$parameters$indiv.sparsity.y
-    subgroup.sparsity.x <- x$parameters$subgroup.sparsity.x
-    subgroup.sparsity.y <- x$parameters$subgroup.sparsity.y
+    parameters <- object$parameters
+    ncomp <- parameters$ncomp
+    mode <- parameters$mode
+    keepX <- parameters$keepX
+    keepY <- parameters$keepY
+    p <- ncol(parameters$X)
+    q <- ncol(parameters$Y)
+    
+    groupX <- parameters$groupX
+    subgroupX <- parameters$subgroupX
+    groupY <- parameters$groupY
+    subgroupY <- parameters$subgroupY
+    
+    indiv_sparsity_x <- parameters$indiv_sparsity_x
+    indiv_sparsity_y <- parameters$indiv_sparsity_y
+    subgroup_sparsity_x <- parameters$subgroup_sparsity_x
+    subgroup_sparsity_y <- parameters$subgroup_sparsity_y
     
     # cat( "\nSparse Group Sub-group Partial Least Squares \n" )
     # cat( "----\n\n")
@@ -23,31 +26,32 @@ print.sgspls <-
     # cat(" You entered data X of dimensions:", n, p, "\n")
     # cat(" You entered data Y of dimensions:", n, q, "\n\n")
     
-    cat( paste0(" Selected ",sum(rowSums(abs(x$loadings$X)>0)>0)," variables among ",p," variables on the X block. \n"))
-    cat( " Selected variables per component:",colSums(abs(x$loadings$X)>0),"\n")
-    cat( " Selected Groups:",unique(unlist(apply(x$loadings$X,2,function(x)groupX[which(abs(x)>0)]))),"\n\n")
-    cat( paste0(" Selected ",sum(rowSums(abs(x$loadings$Y)>0)>0)," variables among ",q," variables on the Y block.\n") )
-    cat( " Selected variables per component:",colSums(abs(x$loadings$Y)>0),"\n")
-    cat( " Selected Groups:",unique(unlist(apply(x$loadings$Y,2,function(x)groupY[which(abs(x)>0)]))),"\n\n")
+    cat( paste0(" Selected ",sum(rowSums(abs(object$weights$X)>0)>0)," variables among ",p," variables on the X block. \n"))
+    cat( " Selected variables per component:",colSums(abs(object$weights$X)>0),"\n")
+    cat( " Selected Groups:",unique(unlist(apply(object$weights$X,2,function(x)groupX[which(abs(x)>0)]))),"\n\n")
+    
+    cat( paste0(" Selected ",sum(rowSums(abs(object$weights$Y)>0)>0)," variables among ",q," variables on the Y block.\n") )
+    cat( " Selected variables per component:",colSums(abs(object$weights$Y)>0),"\n")
+    cat( " Selected Groups:",unique(unlist(apply(object$weights$Y,2,function(x)groupY[which(abs(x)>0)]))),"\n\n")
     
     cat( " Model Parameters:\n\n") 
-    if(keepX[1]==length(unique(groupX)) && indiv.sparsity.x[1] -subgroup.sparsity.x[1] == 0){
+    if(keepX[1]==length(unique(groupX)) && indiv_sparsity_x[1] -subgroup_sparsity_x[1] == 0){
       cat(" No X block penalisation")
     } else{
     cat( "  keepX ", " group ", " subgroup ", " individual \n" )
     for(i in 1:ncomp){
-      cat("   ",keepX[i],"    ", 1-indiv.sparsity.x[i] -subgroup.sparsity.x[i], "    ",subgroup.sparsity.x[i], "      ",indiv.sparsity.x[i]," \n" )
+      cat("   ",keepX[i],"    ", 1-indiv_sparsity_x[i] -subgroup_sparsity_x[i], "    ",subgroup_sparsity_x[i], "      ",indiv_sparsity_x[i]," \n" )
     }
     }
     cat("\n")
     if(is.null(keepY))    {keepY <- length(unique(groupY))}
-    if(keepY[1]==length(unique(groupY)) && indiv.sparsity.y[1] -subgroup.sparsity.y[1] == 0){
+    if(keepY[1]==length(unique(groupY)) && indiv_sparsity_y[1] -subgroup_sparsity_y[1] == 0){
       cat(" No Y block penalisation")
     } else{
     
     cat( "  keepY ", " group ", " subgroup ", " individual \n" )
     for(i in 1:ncomp){
-      cat("   ",keepY[i],"    ",1-indiv.sparsity.y[i] -subgroup.sparsity.y[i], "    ",subgroup.sparsity.y[i], "      ",indiv.sparsity.y[i]," \n" )
+      cat("   ",keepY[i],"    ",1-indiv_sparsity_y[i] -subgroup_sparsity_y[i], "    ",subgroup_sparsity_y[i], "      ",indiv_sparsity_y[i]," \n" )
     }
     }
     cat("\n\n")
@@ -55,23 +59,23 @@ print.sgspls <-
     cat(" Available components: \n", 
         "-------------------- \n")
     
-    cat(" loading vectors: see object$loadings \n")
-    cat(" variates: see object$variates \n")
+    cat(" weights: see object$weights \n")
+    cat(" scores: see object$scores \n")
     cat(" variable names: see object$names \n")
   }
 
 # print Cross validation
 print.cv.sgspls <-
-  function( x, ... )
+  function( object, ... )
   {
     cat("\n ========================================== \n")
-    cat("\n",x$folds,"fold Cross Validation for sgspls \n\n")
+    cat("\n",object$folds,"fold Cross Validation for sgspls \n\n")
     
     cat( " Optimal Parameters:\n\n") 
     cat( "  keepX ", " group ", " subgroup ", " individual \n" )
-    cat("   ",x$keepX,"    ", 1 - x$indiv.sparsity -x$subgroup.sparsity, "    ",x$subgroup.sparsity, "      ",x$indiv.sparsity," \n" )
+    cat("   ",object$best[1],"    ", 1 - object$best[2] - object$best[3], "    ",object$best[3], "      ",object$best[2]," \n" )
     cat("\n")
-    cat( " Optimal MSEP:",x$min.cv,"\n\n")
+    cat( " Optimal MSEP:",object$min_cv,"\n\n")
     cat(" Available plotting: see plot(object) \n")
     cat("\n ========================================== \n")
   }

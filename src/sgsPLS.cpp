@@ -27,6 +27,7 @@ double lambdazerosubgroup( double lambda, arma::vec Mx, arma::vec subgroupX, dou
     int pka = sgind.size();
 
     arma::vec res1 = softthresh(Mx.elem(sgind), (1-alpha1-alpha2)*lambda*0.5);
+    //Rcpp::Rcout << softthresh(Mx.elem(sgind), (1-alpha1-alpha2)*lambda*0.5) << std::endl;
 
     double res2 = norm(res1,2) - alpha2*lambda*sqrt(pka);
 
@@ -61,7 +62,6 @@ arma::vec sgssoftthresh(arma::vec Mx,arma::vec subgroupX, double lambda, double 
     } else {
       double h = norm(stsubgroup) - alpha2*lambda*sqrt(pka);
       res.elem(sgind) = stsubgroup*((g*h-alpha1*alpha2*pow(lambda,2))/((alpha1*lambda*sqrt(pk)+g)*(alpha2*lambda*sqrt(pka)+h)));
-//      res.elem(sgind) = stsubgroup*((g*h-alpha1*alpha2*pow(lambda,2))/(2*(alpha1*lambda*sqrt(pk)+g)*(alpha2*lambda*sqrt(pka)+h)));
     }
   }
   return res;
