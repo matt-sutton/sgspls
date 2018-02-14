@@ -91,46 +91,48 @@
 #'
 
 select.sgspls <- function (model, module, gene, time) {
-  ### Selected variable metrics
-  ## Genes, modules, and number indivduals selected. + table for times
+  ##-- Selected variable metrics --##
   module <- as.factor(paste0("M",module))
   gene <- paste0("G", gene)
-  result <- vector("list", length = model$ncomp)
-  res.select <- vector("list", length = model$ncomp)
-  tab.gene <- vector("list", length = model$ncomp)
-  tab.gene.time <- vector("list", length = model$ncomp)
-  consistent.genes <- vector("list", length = model$ncomp)
-  names(result) <- names(res.select) <- names(tab.gene) <- names(tab.gene.time) <- names(consistent.genes) <- paste0("comp",1:model$ncomp)
-
-  result.summary <- matrix(0, nrow = model$ncomp, ncol = 4)
+  
+  ncomp <- model$parameters$ncomp
+  
+  result <- vector("list", length = ncomp)
+  res.select <- vector("list", length = ncomp)
+  tab.gene <- vector("list", length = ncomp)
+  tab.gene.time <- vector("list", length = ncomp)
+  consistent.genes <- vector("list", length = ncomp)
+  names(result) <- names(res.select) <- names(tab.gene) <- names(tab.gene.time) <- names(consistent.genes) <- paste0("comp",1:ncomp)
+  
+  result.summary <- matrix(0, nrow = ncomp, ncol = 4)
   colnames(result.summary) <- c("# Modules", "# Genes", "# Times", " Total ")
-  rownames(result.summary) <- paste0("comp ",1:model$ncomp)
-
+  rownames(result.summary) <- paste0("comp ",1:ncomp)
+  
   n.modules <- length(unique(module))
   n.times <- length(unique(time))
   size.group <- diag(table(module[time==1], module[time==1]))
-
-  tab.gene.select <- matrix(0, nrow = n.modules, ncol = 1 + model$ncomp)
+  
+  tab.gene.select <- matrix(0, nrow = n.modules, ncol = 1 + ncomp)
   tab.gene.select[,1] <- size.group
-  colnames(tab.gene.select) <- c("size.group", paste0("comp ",1:model$ncomp))
+  colnames(tab.gene.select) <- c("size.group", paste0("comp ",1:ncomp))
   rownames(tab.gene.select) <- unique(module)
-
-  for (h in 1:model$ncomp) {
-    set.ind.zero <- which(abs(model$loadings$X[, h]) > 0)
+  
+  for (h in 1:ncomp) {
+    set.ind.zero <- which(abs(model$weights$X[, h]) > 0)
     # summary stats
     ns.mod <- length(unique(module[set.ind.zero]))
     ns.gene <- length(unique(gene[set.ind.zero]))
     ns.time <- length(unique(time[set.ind.zero]))
     ns <- length(set.ind.zero)
     result.summary[h,] <- c(ns.mod, ns.gene, ns.time, ns)
-
+    
     names(set.ind.zero) <- model$names$X[set.ind.zero]
     res.select[[h]] <- set.ind.zero
     res.gene.time <- res.gene <- vector("list", length = n.modules)
     names(res.gene.time )<-names(res.gene) <- unique(module)
     consistent <- res <- NULL
     for (mod in 1:n.modules) {
-
+      
       inds <- intersect(set.ind.zero,which(as.numeric(module)==mod))
       res.gene.time[[mod]] <- smods <- table(as.character(gene[inds]), time[inds])
       res.gene[[mod]] <- sort(rowSums(smods),decreasing = T)
@@ -138,7 +140,7 @@ select.sgspls <- function (model, module, gene, time) {
       temp <- rep(0,n.times)
       temp[as.numeric(names(colSums(smods)))] <- colSums(smods)
       res <- rbind(res, temp)
-
+      
     }
     tab.gene.time[[h]] <- res.gene.time
     tab.gene[[h]] <- res.gene
@@ -147,17 +149,16 @@ select.sgspls <- function (model, module, gene, time) {
     tab.gene.select[,h+1] <- unlist(lapply(res.gene, function(x) length(x)))
     consistent.genes[[h]] <- unlist(lapply(res.gene, function(x) names(which(x==6))))
     cons.names <- NULL
-#     for(i in 1:n.modules){
-#       cons.names <- c(cons.names, rep(unique(as.character(module))[i], consistent[i]))
-#     }
-#     names(consistent.genes[[h]]) <- cons.names
+    #     for(i in 1:n.modules){
+    #       cons.names <- c(cons.names, rep(unique(as.character(module))[i], consistent[i]))
+    #     }
+    #     names(consistent.genes[[h]]) <- cons.names
   }
   select.x <- lapply(res.select, function(x) unique(as.character(gene[x])))
   ind.total.x <- sort(unique(as.character(unlist(select.x))))
-  return(list(select.table.X = result, summary.table = result.summary, tab.gene.X = tab.gene,  tab.gene.time.X = tab.gene.time,
-              consistent.genes.X = consistent.genes,select.gene.X = select.x,
-              select.gene.X.total = ind.total.x, selected.table.gene.X = tab.gene.select))
+  return(list(select.table.X = result, summary.table = result.summary))
 }
+
 
 # Duplicate penalty parameter to match the number of components
 rep_param <- function(arg, ncomp){

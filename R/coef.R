@@ -114,8 +114,8 @@ coef.sgspls <-
       x_loads <- get_loading(X_s, x_scores)
       y_loads <- get_loading(Y_s, y_scores)
       
-      res$x_loads <- x_loads[ , comps ]
-      res$y_loads <- y_loads[ , comps ]
+      res$x_loads <- x_loads[ , comps , drop = F]
+      res$y_loads <- y_loads[ , comps , drop = F]
       
     }
     
@@ -123,11 +123,11 @@ coef.sgspls <-
       x_loads <- if(is.null(x_loads)) get_loading(X_s, x_scores) else x_loads
       
       if(ncomp == 1){
-        x_adjusted_weights <- x_weights
+        x_adjusted_weights <- x_weights[,, drop = F]
       } else {
         x_adjusted_weights <- get_adj_weights(x_loads, x_weights, nresp)
       }
-      res$x_adjusted_weights <- x_adjusted_weights[, comps]
+      res$x_adjusted_weights <- x_adjusted_weights[, comps, drop = F]
     }
     
     if( "coefficients" %in% type & mode == "regression" ){
@@ -146,7 +146,7 @@ coef.sgspls <-
         B <- apply( B, 2, function(b) scale(t(b),scale = x_scale, center = F) )
         B_hat[ , , a] <- scale(B, scale = 1/y_scale, center = F) 
       }
-      res$B <- B_hat[,,comps]
+      res$B <- B_hat[,,comps, drop = F]
       res$B0 <- B0
     }
     class(res) = c("sgspls_coef")

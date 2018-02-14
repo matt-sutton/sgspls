@@ -56,7 +56,7 @@ cal_weights <- function(M,svd.M,keepX=NA,keepY=NA,groupX=NA,groupY=NA,subgroupX=
     GX = NULL
     Mv = M%*%vold
     # find lambda corresponding to X group number
-    if(penaliseX & lambda.x == 0){
+    if(penaliseX){
       for(k in 1:ngx){
         ind = which(groupX == gXunique[k])
         GX = c(GX, uniroot(lambdazerosubgroup, lower=0, upper=lamb.upper.x, Mx=Mv[ind], subgroupX=subgroupX[ind], alpha1=alpha1.x,alpha2=alpha2.x,tol = tol)$root)
@@ -72,7 +72,7 @@ cal_weights <- function(M,svd.M,keepX=NA,keepY=NA,groupX=NA,groupY=NA,subgroupX=
     Mu = t(M) %*% uold
 
     # find lambda corresponding to Y group number
-    if(penaliseY & lambda.y == 0){
+    if(penaliseY){
       for(ell in 1:ngy){
         ind = which(groupY == gYunique[ell])
         GY = c(GY, uniroot(lambdazerosubgroup, lower=0, upper=lamb.upper.y, Mx=Mu[ind], subgroupX=subgroupY[ind], alpha1=alpha1.y,alpha2=alpha2.y, tol = tol)$root)
