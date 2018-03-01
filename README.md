@@ -15,8 +15,8 @@ library(devtools)
 install_github("sgspls", "matt-sutton")
 ```
 
-Example Usage
--------------
+Example Usage (regression)
+--------------------------
 
 ```R
  library(sgspls)
@@ -80,3 +80,49 @@ Example Usage
 
 ```
 
+Example Usage (canonical)
+--------------------------
+
+```R
+set.seed(1)
+n = 50; p = 500; q = 100
+ncomp <- 3
+
+Scores <- MASS::mvrnorm(n, rep(0, ncomp), Sigma = diag(1, ncomp, ncomp))
+Tm <- Scores
+Sm <- Scores + MASS::mvrnorm(n, rep(0, ncomp), Sigma = diag(0.1, ncomp, ncomp))
+
+
+subgroupC <- -2:2; p_sg <- length(subgroupC) 
+groupC <- c(subgroupC, rep(0,p_sg), subgroupC, rep(0,p_sg), subgroupC, rep(0,p_sg))
+p_g <- length(groupC) 
+
+groupX <- ceiling(1:p / p_g)
+subgroupX <- ceiling(1:p / p_sg)
+
+
+Cm <- matrix(0,nrow = p, ncol = ncomp)
+Cm[groupX == 1, 1] <- groupC
+Cm[groupX == 2, 2] <- groupC
+Cm[groupX == 3, 3] <- groupC
+Dm <- matrix(runif(q*ncomp), ncol = ncomp)
+
+X <- Tm%*%t(Cm) + MASS::mvrnorm(n, rep(0, p), Sigma = diag(0.1,p,p))
+Y <- Sm%*%t(Dm) + MASS::mvrnorm(n, rep(0, q), Sigma = diag(0.1,q,q))
+
+model <- sgspls(X, Y, ncomp = 5, mode = "regression", keepX = 17,
+                groupX = groupX, subgroupX = subgroupX,
+                indiv_sparsity_x = 0.8, subgroup_sparsity_x = 0.15)
+
+#-- Scree type plot for the sgspls canonical method --#
+plot(model)
+
+#-- Sparse Version --#
+model <- sgspls(X, Y, ncomp = 3, mode = "regression", keepX = 1,
+                groupX = groupX, subgroupX = subgroupX,
+                indiv_sparsity_x = 0.8, subgroup_sparsity_x = 0.15)
+
+# check the recovery
+model$weights$X
+
+```

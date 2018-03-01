@@ -278,3 +278,8 @@ plot.cv.sgspls <- function(obj, verbose = T){
   legend(placement,legendVal,ncol=ncols,col = rainbow(nalpha),lty=1:nalpha,lwd=alphawidth)
 
 }
+
+plot.sgspls <- function(obj, verbose = T){
+  singular_values <- model$singular_vals/model$singular_vals[1] 
+  plot(singular_values, xlab = "Number of components", ylab = "Normalised singular values", type = "l")
+}

@@ -180,6 +180,7 @@ sgspls <-
     # additional Args #
     lambda.x = rep(0,ncomp)
     lambda.y = rep(0,ncomp)
+    singular_vals <- rep(0, ncomp)
 
     add.args = list(...)
     if(!is.null(add.args$lambda.x)){
@@ -229,6 +230,9 @@ sgspls <-
       x_scores[,h] <- x_score <- X_h %*% weights$x
       y_scores[,h]  <- y_score <- Y_h %*% weights$y
       
+      # Singular value type value
+      singular_vals[h] <- weights$d
+      
       ### Deflation step
       proj_x <- diag(1,n,n) - tcrossprod(x_score)/drop(crossprod(x_score))
       X_h <- proj_x %*% X_h
@@ -261,7 +265,7 @@ sgspls <-
                        X.residuals = X_h, Y.residuals = Y_h)
 
     result <- list(call = cl, weights = list(X = x_weights, Y = y_weights), scores = list(X = x_scores, Y = y_scores),
-                   names = list(X = colnames(X),Y = colnames(Y), indiv = rownames(X)), parameters=parameters)
+                   names = list(X = colnames(X),Y = colnames(Y), indiv = rownames(X)), singular_vals = singular_vals, parameters=parameters)
     class(result) = c("sgspls")
     return(invisible(result))
   }

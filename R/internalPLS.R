@@ -86,7 +86,7 @@ cal_weights <- function(M,svd.M,keepX=NA,keepY=NA,groupX=NA,groupY=NA,subgroupX=
     if (crossprod(u-uold)+crossprod(v-vold) < tol || ittr >= max.iter || all(u==0)&all(v==0)) {break}
     uold = u; vold = v
   }
-  return(list(x=u,y=v,lambda.x = lambda1, lambda.y = lambda2))
+  return(list(x=u,y=v,lambda.x = lambda1, lambda.y = lambda2, d = drop(t(u)%*%M%*%v)))
 }
 
 
