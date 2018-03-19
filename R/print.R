@@ -1,4 +1,3 @@
-# print fit
 print.sgspls <-
   function( object, ... )
   {
@@ -64,7 +63,6 @@ print.sgspls <-
     cat(" variable names: see object$names \n")
   }
 
-# print Cross validation
 print.cv.sgspls <-
   function( object, ... )
   {

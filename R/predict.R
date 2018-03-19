@@ -1,8 +1,7 @@
-
-# predict function for sgspls
-
 predict.sgspls <-
   function(object, newdata,  ...)  {
+    
+    # predict function for sgspls
 
     newdata <-  as.matrix(newdata)
     nobs <- nrow(newdata)

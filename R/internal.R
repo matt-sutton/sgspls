@@ -1,8 +1,3 @@
-####################################
-### Extra functions for analysis ###
-####################################
-
-
 #' Find selected Modules, Genes and Times
 #'
 #' This function finds the selected groups, subgroups and individual predictors
@@ -280,6 +275,46 @@ plot.cv.sgspls <- function(obj, verbose = T){
 }
 
 plot.sgspls <- function(obj, verbose = T){
-  singular_values <- model$singular_vals/model$singular_vals[1] 
-  plot(singular_values, xlab = "Number of components", ylab = "Normalised singular values", type = "l")
+  if(obj$parameters$mode == "regression"){
+    pve <- calc_pve(standard_pls)
+    plot(drop(pve), xlab = "Number of components", ylab = "Percentage Variance Explained", type = "l")
+  } else{
+    singular_values <- model$singular_vals/model$singular_vals[1] 
+    plot(singular_values, xlab = "Number of components", ylab = "Normalised singular values", type = "l")
+  }
 }
+
+
+sim_regression <- function(n = 100, q = 1, coef_subgroup = rep(1, 5), nonzero_subgroups = 3, 
+                           zero_subgroups = 2, nonzero_groups = 5, zero_groups = 5, sigma = 0.5) {
+  
+  generate_group <- function(coef_g, nonzero_groups, zero_groups){
+    
+    n_groups <- nonzero_groups + zero_groups
+    coef <- matrix(0, nrow = length(coef_g)*n_groups)
+    
+    groupInd <- ceiling(1:length(coef) / length(coef_g))
+    
+    sel_groups <- sample(1:n_groups, replace = F, size = nonzero_groups)
+    coef[which(groupInd %in% sel_groups)] <- coef_g
+    return(coef)
+  }
+  
+  B <- NULL
+  for(resp in 1:q){
+    coef_group <- generate_group(coef_subgroup, nonzero_subgroups, zero_subgroups)
+    coef <- generate_group(coef_group, nonzero_groups, zero_groups)
+    B <- cbind(B, coef)
+  }
+  p <- length(coef)
+  X <- matrix(rnorm(n*p), nrow = n, ncol = p)
+  E <- MASS::mvrnorm(n, rep(0,q), Sigma = diag(sigma, q, q))
+  Y <- X%*%B + E
+  
+  groupX <- ceiling(1:p / length(coef_group))
+  subgroupX <- ceiling(1:p / length(coef_subgroup))
+  
+  return(list(X=X, Y=Y, B = B, groupX = groupX, subgroupX = subgroupX))
+}
+
+

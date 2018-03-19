@@ -211,7 +211,15 @@ tune_sgspls <-
     nsparsities <- dim(sparsities)[1]
     results_tuning <- NULL
     
-    ncomp <- if(is.null(parameters$ncomp)) 1 else parameters$ncomp + 1 
+    if(is.null(parameters$ncomp)) {
+      parameters$ncomp <- 1
+    }
+    
+    if(!(class(parameters) %in% "cv.sgspls")){
+      ncomp <- 1:parameters$ncomp
+    } else {
+      ncomp <- parameters$ncomp + 1 
+    }
     
     #-------------------------------------------------#
     #--- Loop through sparsities combinations on j ---#
@@ -236,7 +244,7 @@ tune_sgspls <-
       object_groups <- tune_groups(parameters, group_seq=group_seq, setseed = setseed,
                                    block = block, scale_resp = scale_resp)
       
-      results <- cbind( group_seq, sparsities[j,3], sparsities[j,2], object_groups$MSEP[ncomp, ] )
+      results <- cbind( group_seq, sparsities[j,3], sparsities[j,2], t(object_groups$MSEP[ncomp, ,drop=F]) )
 
       results_tuning <- rbind(results_tuning, results)
       if (progressBar == TRUE) {
@@ -247,15 +255,16 @@ tune_sgspls <-
     #------------------------------------#
     #-- create table of tuning results --#
     
-    colnames(results_tuning) <- c("Groups", "Individual", "Subgroup", "MSEP")
-    best <- results_tuning[which.min(results_tuning[,4]),]
+    colnames(results_tuning) <- c("Groups", "Individual", "Subgroup", paste0("MSEP comp",ncomp))
+    MSEPopt <- min(results_tuning[,-c(1:3)])
+    best <- results_tuning[which(results_tuning == MSEPopt, arr.ind = T)[1],]
     keep <- best[1];
     indiv_sparsity <- best[2];
     subgroup_sparsity <- best[3]
 
     #-- Return parameters with optimal fit --#
     parameters <- object_groups$parameters
-    parameters$ncomp <- ncomp
+    parameters$ncomp <- max(ncomp)
     
     if(block == "X" || block == "x"){
       parameters$keepX[ncomp] <- keep
@@ -278,7 +287,8 @@ tune_sgspls <-
                    tuning_sparsities = sparsities,
                    folds = folds,
                    min_cv = min(results_tuning[,4]),
-                   group_seq = group_seq)
+                   group_seq = group_seq,
+                   folds = object_groups$folds)
 
     class(result) = c("cv.sgspls")
     return(result)
@@ -378,11 +388,19 @@ tune_groups <-
     if(is.null(group_seq))
       stop("Enter a sequence of groups to tune over")
     
-    ncomp <- if(is.null(parameters$ncomp)) 1 else parameters$ncomp + 1
+    if(is.null(parameters$ncomp)) {
+      parameters$ncomp <- 1
+      }
     
-    parameters$ncomp <- ncomp
+    if(!(class(parameters) %in% "cv.sgspls")){
+      ncomp <- 1:parameters$ncomp
+    } else {
+      ncomp <- parameters$ncomp + 1 
+    }
     
-    MSEP <- matrix(0, ncol = ngroups, nrow = ncomp)
+    parameters$ncomp <- max(ncomp)
+    
+    MSEP <- matrix(0, ncol = ngroups, nrow = max(ncomp))
     
     #-- Tune over the group sequence --#
     for(i in 1:ngroups){
@@ -402,7 +420,7 @@ tune_groups <-
       object_perf <- perf(object, folds = folds, progressBar = FALSE, 
                           scale_resp = scale_resp, setseed = setseed)
       
-      MSEP[ , i ] <- apply(object_perf$MSEP, 1, mean)
+      MSEP[ , i ] <- apply(object_perf$MSEP, 1, sum)
       
     }
     
@@ -410,12 +428,12 @@ tune_groups <-
     mMSEP <- min(MSEP)
     
     colnames(MSEP) <- paste0(group_seq)
-    rownames(MSEP) <- paste0("ncomp ", 1:ncomp)
+    rownames(MSEP) <- paste0("ncomp ", 1:max(ncomp))
     
     mMSEPcol <- apply(MSEP, 2, min)
     mMSEProw <- apply(MSEP, 1, min)
     
-    ncomp_opt <- min( (1:ncomp)[mMSEProw == mMSEP])
+    ncomp_opt <- min( (1:max(ncomp))[mMSEProw == mMSEP])
     keep_opt <- min( group_seq[mMSEPcol == mMSEP])
     
     #-- Return parameters with optimal fit --#
@@ -430,7 +448,7 @@ tune_groups <-
     
     
     res <- list(
-      MSEP = MSEP, ncomp_opt = ncomp_opt, keep_opt = keep_opt, parameters = parameters
+      MSEP = MSEP, ncomp_opt = ncomp_opt, keep_opt = keep_opt, parameters = parameters, folds = object_perf$folds
     )
     return(res)
   }
