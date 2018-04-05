@@ -9,9 +9,9 @@
 #' @return \code{PVE} returns a vector of percentage of variance explained by the scores in the PLS method.
 #' See references for details.
 #' 
-#' @seealso Tuning functions \code{\link{calc_pve}},
-#' \code{\link{tune_sgspls}}, \code{\link{tune_groups}}. 
-#' Model performance and estimation  \code{\link{predict}}, \code{\link{perf.sgspls}}, \code{\link{coeff.sgspls}} 
+#' @seealso Tuning functions \code{\link[sgspls]{calc_pve}},
+#' \code{\link[sgspls]{tune_sgspls}}, \code{\link[sgspls]{tune_groups}}. 
+#' Model performance and estimation  \code{\link[sgspls]{predict}}, \code{\link[sgspls]{perf.sgspls}}, \code{\link[sgspls]{coeff.sgspls}} 
 #' @references Liquet Benoit, Lafaye de Micheaux, Boris Hejblum, Rodolphe
 #'   Thiebaut. A group and Sparse Group Partial Least Square approach applied in
 #'   Genomics context. \emph{Submitted}.
@@ -35,6 +35,8 @@
 calc_pve <- function(object){
   
   #--- Take the predictions from the PLS object --#
+  Y <- object$parameters$Y
+  X <- object$parameters$X
   Ypred <- predict(object, X)
   
   PVE <- matrix(
@@ -124,8 +126,8 @@ generate_sparsities <- function(){
 #' \item{min_cv}{Minimum MSEP score.}
 #' \item{group_seq}{Groups tuned over in cross validation.}
 #' 
-#' @seealso \code{\link{sgspls}} Tuning functions \code{\link{calc_pve}}, \code{\link{tune_groups}}. 
-#' Model performance and estimation  \code{\link{predict}}, \code{\link{perf.sgspls}}, \code{\link{coeff.sgspls}} 
+#' @seealso \code{\link[sgspls]{sgspls}} Tuning functions \code{\link[sgspls]{calc_pve}}, \code{\link[sgspls]{tune_groups}}. 
+#' Model performance and estimation  \code{\link[sgspls]{predict}}, \code{\link[sgspls]{perf.sgspls}}, \code{\link[sgspls]{coeff.sgspls}} 
 #' 
 #' @references Liquet Benoit, Lafaye de Micheaux, Boris Hejblum, Rodolphe
 #'   Thiebaut. A group and Sparse Group Partial Least Square approach applied in
@@ -134,7 +136,7 @@ generate_sparsities <- function(){
 #' @examples
 #'
 #'  set.seed(1)
-#'  n = 50; p = 500; 
+#'  n = 50; p = 510; 
 #'  size.groups = 30; size.subgroups = 5
 #'  groupX <- ceiling(1:p / size.groups)
 #'  subgroupX <- ceiling(1:p / size.subgroups)
@@ -146,53 +148,42 @@ generate_sparsities <- function(){
 #'  betaG <- c(bSG, b0, bSG, b0, bSG, b0)
 #'  beta[1:size.groups] <- betaG
 #'  
-#'  y = X %*% beta + 0.1*rnorm(n)
+#'  y = X %*% beta + rnorm(n)
 #'  
 #'  #--------------------------------------#
 #'  #-- Set up a basic model to tune --#
 #'  
-#'  parameters <- list(X=X, Y=y, groupX=groupX, subgroupX=subgroupX)
+#'  cv_pls <- list(X=X, Y=y, groupX=groupX, subgroupX=subgroupX)
 #'  
 #'  #---------------------------------------------#
 #'  #-- Tune over 1 to 2 groups and multiple    --#
 #'  #-- sparsity levels for the first component --#
 #'  
-#'  cv_pls_comp1 <- tune_sgspls(parameters = parameters, group_seq = 1:2, scale_resp = F)
+#'  cv_pls_comp1 <- tune_sgspls(pls_obj = cv_pls, group_seq = 1:2, scale_resp = FALSE)
 #'  
 #'  #-- MSEP is on the original scale for the response --#
 #'  cv_pls_comp1$results_tuning
 #'  cv_pls_comp1$best
 #'  
 #'  # Use the optimal fit for the first component and tune the second component
-#'  cv_pls_comp2 <- tune_sgspls(parameters = cv_pls_comp1$parameters, group_seq = 1:2, scale_resp = F)
-#'  cv_pls_comp2
+#'  cv_pls_comp2 <- tune_sgspls(pls_obj = cv_pls_comp1, group_seq = 1:2, scale_resp = FALSE)
+#'  cv_pls_comp2$results_tuning
+#'  cv_pls_comp2$best
 #'  
 #'  # Use the optimal fit for the second component and tune the third component
-#'  cv_pls_comp3 <- tune_sgspls(parameters = cv_pls_comp2$parameters, group_seq = 1:2, scale_resp = F)
+#'  cv_pls_comp3 <- tune_sgspls(pls_obj =  cv_pls_comp2, group_seq = 1:2, scale_resp = FALSE)
+#'  cv_pls_comp3$best
 #'  
-#'  #--------------------------------------#
-#'  #------ Inspect tuning function  ------#
-#'  
-#'  # Look at the plot of validation curves
-#'  plot(cv_pls_comp3)
-#'  
-#'  # get the optimal values
-#'  cv_pls_comp3
-#'  
-#'  # Fit the pls model with these parameters
 #'  model <- do.call(sgspls, args = cv_pls_comp3$parameters)
 #'  
-#'  # See model details
 #'  model
 #'  
-#'  # get the regression coefficients
-#'  model_coef <- coef(model, type = "coefficients", comps = 3)
+#'  model_coef <- coef(model, type = "coefficients")
 #'  
-#'  cbind(beta, model_coef$B)
-#'  
+#'  cbind(beta, model_coef$B[,,2])
 #'  
 tune_sgspls <-
-  function(parameters, sparsities=NULL, group_seq=NULL, block = "X",
+  function(pls_obj, sparsities=NULL, group_seq=NULL, block = "X",
            folds= 10, progressBar=TRUE, setseed = 1, scale_resp = TRUE) {
 
     #----------------------#
@@ -206,21 +197,20 @@ tune_sgspls <-
     if (progressBar == TRUE)
       pb <- txtProgressBar(style = 3)
 
-    #--- Initalise ---#
+    #--- Init ---#
     ngroups <- length(group_seq)
     nsparsities <- dim(sparsities)[1]
     results_tuning <- NULL
-    
-    if(is.null(parameters$ncomp)) {
-      parameters$ncomp <- 1
-    }
-    
-    if(!(class(parameters) %in% "cv.sgspls")){
-      ncomp <- 1:parameters$ncomp
-    } else {
+     
+    if(class(pls_obj) %in% "cv.sgspls"){
+      parameters <- pls_obj$parameters
       ncomp <- parameters$ncomp + 1 
+    } else {
+      parameters <- pls_obj
+      ncomp <- 1:max(parameters$ncomp+1, 1)
     }
-    
+    parameters$ncomp <- ncomp
+
     #-------------------------------------------------#
     #--- Loop through sparsities combinations on j ---#
     
@@ -241,7 +231,7 @@ tune_sgspls <-
       }
       
       #--- Loop through groups ---#
-      object_groups <- tune_groups(parameters, group_seq=group_seq, setseed = setseed,
+      object_groups <- tune_groups(parameters, group_seq=group_seq, setseed = setseed, 
                                    block = block, scale_resp = scale_resp)
       
       results <- cbind( group_seq, sparsities[j,3], sparsities[j,2], t(object_groups$MSEP[ncomp, ,drop=F]) )
@@ -319,8 +309,8 @@ tune_sgspls <-
 #' \item{min_cv}{Minimum MSEP score.}
 #' \item{group_seq}{Groups tuned over in cross validation.}
 #' 
-#' @seealso \code{\link{sgspls}} Tuning functions \code{\link{calc_pve}}, \code{\link{tune_sgspls}}. 
-#' Model performance and estimation  \code{\link{predict}}, \code{\link{perf.sgspls}}, \code{\link{coeff.sgspls}} 
+#' @seealso \code{\link[sgspls]{sgspls}} Tuning functions \code{\link[sgspls]{calc_pve}}, \code{\link[sgspls]{tune_sgspls}}. 
+#' Model performance and estimation  \code{\link[sgspls]{predict}}, \code{\link[sgspls]{perf.sgspls}}, \code{\link[sgspls]{coef.sgspls}} 
 #' @references Liquet Benoit, Lafaye de Micheaux, Boris Hejblum, Rodolphe
 #'   Thiebaut. A group and Sparse Group Partial Least Square approach applied in
 #'   Genomics context. \emph{Submitted}.
@@ -328,7 +318,7 @@ tune_sgspls <-
 #' @examples
 #'
 #'  set.seed(1)
-#'  n = 50; p = 500; 
+#'  n = 50; p = 510; 
 #'  size.groups = 30; size.subgroups = 5
 #'  groupX <- ceiling(1:p / size.groups)
 #'  subgroupX <- ceiling(1:p / size.subgroups)
@@ -340,44 +330,19 @@ tune_sgspls <-
 #'  betaG <- c(bSG, b0, bSG, b0, bSG, b0)
 #'  beta[1:size.groups] <- betaG
 #'  
-#'  y = X %*% beta + 0.1*rnorm(n)
+#'  y = X %*% beta + rnorm(n)
 #'  
 #'  #--------------------------------------#
 #'  #-- Set up a basic model to tune --#
 #'  
-#'  parameters <- list(X=X, Y=y, groupX=groupX, subgroupX=subgroupX)
+#'  cv_pls <- list(X=X, Y=y, groupX=groupX, subgroupX=subgroupX, ncomp = 1:3)
 #'  
-#'  #---------------------------------------------#
-#'  #-- Tune over 1 to 2 groups and multiple    --#
-#'  #-- sparsity levels for the first component --#
-#'  
-#'  cv_pls_comp1 <- tune_groups(parameters = parameters, group_seq = 1:2, scale_resp = F)
+#'  cv_pls_comp1 <- tune_groups(parameters = cv_pls, group_seq = 1:2, scale_resp = FALSE)
 #'  
 #'  #-- MSEP is on the original scale for the response --#
 #'  cv_pls_comp1$MSEP
-#'  
-#'  # Use the optimal fit for the first component and tune the second component
-#'  cv_pls_comp2 <- tune_groups(parameters = cv_pls_comp1$parameters, group_seq = 1:2, scale_resp = F)
-#'  cv_pls_comp2$MSEP
-#'  
-#'  # Use the optimal fit for the second component and tune the third component
-#'  cv_pls_comp3 <- tune_groups(parameters = cv_pls_comp2$parameters, group_seq = 1:2, scale_resp = F)
-#'  cv_pls_comp3$MSEP
-#'  
-#'  #--------------------------------------#
-#'  #------ Inspect tuning function  ------#
-#'  
-#'  # Fit the pls model with these parameters
-#'  model <- do.call(sgspls, args = cv_pls_comp3$parameters)
-#'  
-#'  # See model details
-#'  model
-#'  
-#'  # get the regression coefficients
-#'  model_coef <- coef(model, type = "coefficients", comps = 3)
-#'  
-#'  cbind(beta, model_coef$B)
-#'  
+#'  cv_pls_comp1$keep_opt
+#'  cv_pls_comp1$ncomp_opt
 #'  
 tune_groups <-
   function(parameters, group_seq = NULL, block = "X", folds = 10, scale_resp = TRUE, setseed = 1) {
@@ -388,16 +353,7 @@ tune_groups <-
     if(is.null(group_seq))
       stop("Enter a sequence of groups to tune over")
     
-    if(is.null(parameters$ncomp)) {
-      parameters$ncomp <- 1
-      }
-    
-    if(!(class(parameters) %in% "cv.sgspls")){
-      ncomp <- 1:parameters$ncomp
-    } else {
-      ncomp <- parameters$ncomp + 1 
-    }
-    
+    ncomp <- parameters$ncomp
     parameters$ncomp <- max(ncomp)
     
     MSEP <- matrix(0, ncol = ngroups, nrow = max(ncomp))
@@ -438,7 +394,6 @@ tune_groups <-
     
     #-- Return parameters with optimal fit --#
     parameters <- object$parameters
-    parameters$ncomp <- ncomp_opt
     
     if(block == "X" || block == "x")
       parameters$keepX[ncomp] <- keep_opt

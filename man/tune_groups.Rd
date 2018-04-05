@@ -40,7 +40,7 @@ groups.
 \examples{
 
  set.seed(1)
- n = 50; p = 500; 
+ n = 50; p = 510; 
  size.groups = 30; size.subgroups = 5
  groupX <- ceiling(1:p / size.groups)
  subgroupX <- ceiling(1:p / size.subgroups)
@@ -52,44 +52,19 @@ groups.
  betaG <- c(bSG, b0, bSG, b0, bSG, b0)
  beta[1:size.groups] <- betaG
  
- y = X \%*\% beta + 0.1*rnorm(n)
+ y = X \%*\% beta + rnorm(n)
  
  #--------------------------------------#
  #-- Set up a basic model to tune --#
  
- parameters <- list(X=X, Y=y, groupX=groupX, subgroupX=subgroupX)
+ cv_pls <- list(X=X, Y=y, groupX=groupX, subgroupX=subgroupX, ncomp = 1:3)
  
- #---------------------------------------------#
- #-- Tune over 1 to 2 groups and multiple    --#
- #-- sparsity levels for the first component --#
- 
- cv_pls_comp1 <- tune_groups(parameters = parameters, group_seq = 1:2, scale_resp = F)
+ cv_pls_comp1 <- tune_groups(parameters = cv_pls, group_seq = 1:2, scale_resp = FALSE)
  
  #-- MSEP is on the original scale for the response --#
  cv_pls_comp1$MSEP
- 
- # Use the optimal fit for the first component and tune the second component
- cv_pls_comp2 <- tune_groups(parameters = cv_pls_comp1$parameters, group_seq = 1:2, scale_resp = F)
- cv_pls_comp2$MSEP
- 
- # Use the optimal fit for the second component and tune the third component
- cv_pls_comp3 <- tune_groups(parameters = cv_pls_comp2$parameters, group_seq = 1:2, scale_resp = F)
- cv_pls_comp3$MSEP
- 
- #--------------------------------------#
- #------ Inspect tuning function  ------#
- 
- # Fit the pls model with these parameters
- model <- do.call(sgspls, args = cv_pls_comp3$parameters)
- 
- # See model details
- model
- 
- # get the regression coefficients
- model_coef <- coef(model, type = "coefficients", comps = 3)
- 
- cbind(beta, model_coef$B)
- 
+ cv_pls_comp1$keep_opt
+ cv_pls_comp1$ncomp_opt
  
 }
 \references{
@@ -98,6 +73,6 @@ Liquet Benoit, Lafaye de Micheaux, Boris Hejblum, Rodolphe
   Genomics context. \emph{Submitted}.
 }
 \seealso{
-\code{\link{sgspls}} Tuning functions \code{\link{calc_pve}}, \code{\link{tune_sgspls}}. 
-Model performance and estimation  \code{\link{predict}}, \code{\link{perf.sgspls}}, \code{\link{coeff.sgspls}}
+\code{\link[sgspls]{sgspls}} Tuning functions \code{\link[sgspls]{calc_pve}}, \code{\link[sgspls]{tune_sgspls}}. 
+Model performance and estimation  \code{\link[sgspls]{predict}}, \code{\link[sgspls]{perf.sgspls}}, \code{\link[sgspls]{coef.sgspls}}
 }

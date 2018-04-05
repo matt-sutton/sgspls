@@ -9,7 +9,8 @@
 }
 \details{
 
-The sgPLS package provides sparse, group and sparse group version for PLS approaches. The main functions are: sPLS for sparse PLS, gPLS for group PLS and sgPLS for sparse group PLS.
+Implementation of sparse group subgroup Partial Least Squares. 
+Designed for variable selection at a group, subgroup and individual level.
 }
 \author{
 \packageAuthor{sgspls}
@@ -17,7 +18,7 @@ The sgPLS package provides sparse, group and sparse group version for PLS approa
 Maintainer: \packageMaintainer{sgspls}
 }
 \references{
-Liquet Benoit, Lafaye de Micheaux, Boris Hejblum, Rodolphe
+  Liquet Benoit, Lafaye de Micheaux, Boris Hejblum, Rodolphe
   Thiebaut. A group and Sparse Group Partial Least Square approach applied in
   Genomics context. \emph{Submitted}.
 
@@ -34,9 +35,4 @@ Liquet Benoit, Lafaye de Micheaux, Boris Hejblum, Rodolphe
 
 }
 \keyword{ package }
-\seealso{
-Tuning functions \code{\link{sgsPLS.tune.groups}},
-\code{\link{sgsPLS.tune}}, \code{\link{predict}}, \code{\link{perf}} and
-functions from \code{mixOmics} package: \code{summary}, \code{plotIndiv},
-\code{plotVar}, \code{plot3dIndiv}, \code{plot3dVar}.
-}
+

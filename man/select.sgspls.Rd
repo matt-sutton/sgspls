@@ -36,63 +36,44 @@ from a sgspls method.
 }
 \examples{
 
-n = 100; p = 200; size.groups = 25; size.subgroups = 5
+set.seed(1)
+n = 50; p = 510; 
+
+size.groups = 30; size.subgroups = 5
 groupX <- ceiling(1:p / size.groups)
 subgroupX <- ceiling(1:p / size.subgroups)
+
 X = matrix(rnorm(n * p), ncol = p, nrow = n)
 
 beta <- rep(0,p)
-
-# There are 40 genes split into 8 modules of 5 genes
-# Each b.module contains 5 genes from all 5 time points
-# Each b.time subgroup contains the expressions of the 5 genes
-# at that time point
-
-b.time <- -2:2; b.0 <- rep(0,length(b.time))
-b.module <- c(b.time, b.0, b.time, b.0, b.0)
-beta[1:size.groups] <- b.module
-# Beta contains 1 active module with 2 active time points
-# and 5 active genes
-
-# index for modules, genes and times
-mod.index <- groupX
-gene.index <- as.vector(sapply(0:7, function(X) rep(1:5,5) + X*5))
-time.index <- rep(rep(1:5,each = 5), 8)
+bSG <- -2:2; b0 <- rep(0,length(bSG))
+betaG <- c(bSG, b0, bSG, b0, bSG, b0)
+beta[1:size.groups] <- betaG
 
 y = X \%*\% beta + 0.1*rnorm(n)
 
-model.sgspls <- sgspls(X, y, ncomp = 3, mode = "regression", keepX = 1,
-                       groupX = groupX, subgroupX = subgroupX,indiv.sparsity.x = 0.8,
-                       subgroup.sparsity.x = 0.15, penalty = "sgsgPLS")
-model.sgsplsR <- predict(model.sgspls, X)
+# Beta contains 1 active module with 3 active genes
+# index for modules, genes and times
+mod_index <- groupX
+gene_index <- subgroupX
+time_index <- rep(rep(1:5,6), 17)
+
+model <- sgspls(X, y, ncomp = 3, mode = "regression", keepX = 1,
+                groupX = groupX, subgroupX = subgroupX,
+                indiv_sparsity_x = 0.8, subgroup_sparsity_x = 0.15)
+
+reg_coef <- coef(model, type = "coefficients")
+
+# Check model fit
+cbind(reg_coef$B[ , , 3], beta)
 
 # See the estimated regression coefficient
-cbind(model.sgsplsR$B.hat[,,3], beta, mod.index, gene.index, time.index)[1:30,]
-
-selectedVar <- select.sgspls(model.sgspls, module = mod.index, gene = gene.index, time = time.index)
-
+cbind(reg_coef$B[,,3], beta, mod_index, gene_index, time_index)[1:30,]
+selectedVar <- select.sgspls(model, module = mod_index, gene = gene_index, time = time_index)
 # show number of selected genes for component 1
 selectedVar$select.table.X$comp1
-
 # show number of modules, genes, times and total variables selected
 selectedVar$summary.table
-
 # Show when genes were selected from given module
-selectedVar$tab.gene.time.X$comp1$M1
-
-# Shows the number of times each gene is selected
-selectedVar$tab.gene.X$comp1$M1
-
-# Shows which genes were consistently selected
-selectedVar$consistent.genes.X$comp1
-
-# Shows which genes were selected over all modules
-selectedVar$select.gene.X$comp1
-
-# Shows which genes were selected over all modules over all components
-selectedVar$select.gene.X.total
-
-# shows number of genes selected at any timepoint within each module
-selectedVar$selected.table.gene.X
 
 }

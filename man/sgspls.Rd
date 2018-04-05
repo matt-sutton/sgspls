@@ -75,7 +75,7 @@ variables at the group, subgroup and single feature levels.
 \examples{
 
 set.seed(1)
-n = 50; p = 500; 
+n = 50; p = 510; 
 
 size.groups = 30; size.subgroups = 5
 groupX <- ceiling(1:p / size.groups)
@@ -120,9 +120,9 @@ Liquet Benoit, Lafaye de Micheaux, Boris Hejblum, Rodolphe
   Paris: Editions Technic.
 }
 \seealso{
-Tuning functions \code{\link{calc_pve}},
-\code{\link{tune_sgspls}}, \code{\link{tune_groups}}. 
-Model performance and estimation  \code{\link{predict}}, \code{\link{perf.sgspls}}, \code{\link{coeff.sgspls}}
+Tuning functions \code{\link[sgspls]{calc_pve}},
+\code{\link[sgspls]{tune_sgspls}}, \code{\link[sgspls]{tune_groups}}. 
+Model performance and estimation  \code{\link[sgspls]{predict}}, \code{\link[sgspls]{perf.sgspls}}, \code{\link[sgspls]{coef.sgspls}}
 }
 \author{
 Matthew Sutton \email{m5.sutton@hdr.qut.edu.au}

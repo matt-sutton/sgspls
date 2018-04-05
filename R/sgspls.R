@@ -59,14 +59,14 @@
 #'   Tenenhaus, M. (1998). \emph{La r\'egression PLS: th\'eorie et pratique}.
 #'   Paris: Editions Technic.
 #'
-#' @seealso Tuning functions \code{\link{calc_pve}},
-#' \code{\link{tune_sgspls}}, \code{\link{tune_groups}}. 
-#' Model performance and estimation  \code{\link{predict}}, \code{\link{perf.sgspls}}, \code{\link{coeff.sgspls}} 
+#' @seealso Tuning functions \code{\link[sgspls]{calc_pve}},
+#' \code{\link[sgspls]{tune_sgspls}}, \code{\link[sgspls]{tune_groups}}. 
+#' Model performance and estimation  \code{\link[sgspls]{predict}}, \code{\link[sgspls]{perf.sgspls}}, \code{\link[sgspls]{coef.sgspls}} 
 #'
 #' @examples
 #'
 #' set.seed(1)
-#' n = 50; p = 500; 
+#' n = 50; p = 510; 
 #' 
 #' size.groups = 30; size.subgroups = 5
 #' groupX <- ceiling(1:p / size.groups)
@@ -206,8 +206,7 @@ sgspls <-
       svd.M <- try(svd(M,nu = 1,nv = 1))
 
       if(class(svd.M) == "try-error"){
-        require(irlba,quietly = T)
-        irlba(M,nu = 1,nv = 1)
+        irlba::irlba(M,nu = 1,nv = 1)
       }
 
       if (svd.M$d[1] < .Machine$double.eps) {

@@ -39,7 +39,7 @@ Liquet Benoit, Lafaye de Micheaux, Boris Hejblum, Rodolphe
   Genomics context. \emph{Submitted}.
 }
 \seealso{
-Tuning functions \code{\link{calc_pve}},
-\code{\link{tune_sgspls}}, \code{\link{tune_groups}}. 
-Model performance and estimation  \code{\link{predict}}, \code{\link{perf.sgspls}}, \code{\link{coeff.sgspls}}
+Tuning functions \code{\link[sgspls]{calc_pve}},
+\code{\link[sgspls]{tune_sgspls}}, \code{\link[sgspls]{tune_groups}}. 
+Model performance and estimation  \code{\link[sgspls]{predict}}, \code{\link[sgspls]{perf.sgspls}}, \code{\link[sgspls]{coeff.sgspls}}
 }

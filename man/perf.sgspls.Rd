@@ -55,6 +55,7 @@ subgroupX <- ceiling(1:p / size.subgroups)
 X = matrix(rnorm(n * p), ncol = p, nrow = n)
 
 beta <- rep(0,p)
+bSG <- -2:2; b0 <- rep(0,length(bSG))
 betaG <- c(bSG, b0, bSG, b0, bSG, b0)
 beta[1:size.groups] <- betaG
 
@@ -77,7 +78,7 @@ Mevik, Bjørn-Helge, and Henrik René Cederkvist. 2004.
   \emph{Journal of Chemometrics} \bold{18} (9). John Wiley & Sons, Ltd.:422–29.
 }
 \seealso{
-Tuning functions \code{\link{calc_pve}},
-\code{\link{tune_sgspls}}, \code{\link{tune_groups}}. 
-Model performance and estimation  \code{\link{predict}}, \code{\link{perf.sgspls}}, \code{\link{coeff.sgspls}}
+Tuning functions \code{\link[sgspls]{calc_pve}},
+\code{\link[sgspls]{tune_sgspls}}, \code{\link[sgspls]{tune_groups}}. 
+Model performance and estimation  \code{\link[sgspls]{predict.sgspls}}, \code{\link[sgspls]{perf.sgspls}}, \code{\link[sgspls]{coef.sgspls}}
 }

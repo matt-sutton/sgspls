@@ -4,12 +4,10 @@
 \alias{tune_sgspls}
 \title{Compute cross-validated mean squared prediction error for sgspls regression}
 \usage{
-tune_sgspls(parameters, sparsities = NULL, group_seq = NULL, block = "X",
+tune_sgspls(pls_obj, sparsities = NULL, group_seq = NULL, block = "X",
   folds = 10, progressBar = TRUE, setseed = 1, scale_resp = TRUE)
 }
 \arguments{
-\item{parameters}{List of parameters to use in the current PLS object (see examples below).}
-
 \item{sparsities}{Matrix of sparsities, with columns corresponding to group, subgroup and individual 
 sparsity levels to tune over. If it is NULL then a preselected set of sparsity levels is used.}
 
@@ -24,6 +22,8 @@ sparsity levels to tune over. If it is NULL then a preselected set of sparsity l
 \item{setseed}{False, or integer for replicating tuning parameters.}
 
 \item{scale_resp}{Logical, the MSEP is standardised across responses (see perf function for details).}
+
+\item{parameters}{List of parameters to use in the current PLS object (see examples below).}
 }
 \value{
 \code{tune_sgspls} returns a list with class \code{cv.sgspls} with measures:
@@ -42,7 +42,7 @@ Offers a sequential way to find optimal sparsities, and number of groups for eit
 \examples{
 
  set.seed(1)
- n = 50; p = 500; 
+ n = 50; p = 510; 
  size.groups = 30; size.subgroups = 5
  groupX <- ceiling(1:p / size.groups)
  subgroupX <- ceiling(1:p / size.subgroups)
@@ -54,50 +54,39 @@ Offers a sequential way to find optimal sparsities, and number of groups for eit
  betaG <- c(bSG, b0, bSG, b0, bSG, b0)
  beta[1:size.groups] <- betaG
  
- y = X \%*\% beta + 0.1*rnorm(n)
+ y = X \%*\% beta + rnorm(n)
  
  #--------------------------------------#
  #-- Set up a basic model to tune --#
  
- parameters <- list(X=X, Y=y, groupX=groupX, subgroupX=subgroupX)
+ cv_pls <- list(X=X, Y=y, groupX=groupX, subgroupX=subgroupX)
  
  #---------------------------------------------#
  #-- Tune over 1 to 2 groups and multiple    --#
  #-- sparsity levels for the first component --#
  
- cv_pls_comp1 <- tune_sgspls(parameters = parameters, group_seq = 1:2, scale_resp = F)
+ cv_pls_comp1 <- tune_sgspls(pls_obj = cv_pls, group_seq = 1:2, scale_resp = FALSE)
  
  #-- MSEP is on the original scale for the response --#
  cv_pls_comp1$results_tuning
  cv_pls_comp1$best
  
  # Use the optimal fit for the first component and tune the second component
- cv_pls_comp2 <- tune_sgspls(parameters = cv_pls_comp1$parameters, group_seq = 1:2, scale_resp = F)
- cv_pls_comp2
+ cv_pls_comp2 <- tune_sgspls(pls_obj = cv_pls_comp1, group_seq = 1:2, scale_resp = FALSE)
+ cv_pls_comp2$results_tuning
+ cv_pls_comp2$best
  
  # Use the optimal fit for the second component and tune the third component
- cv_pls_comp3 <- tune_sgspls(parameters = cv_pls_comp2$parameters, group_seq = 1:2, scale_resp = F)
+ cv_pls_comp3 <- tune_sgspls(pls_obj =  cv_pls_comp2, group_seq = 1:2, scale_resp = FALSE)
+ cv_pls_comp3$best
  
- #--------------------------------------#
- #------ Inspect tuning function  ------#
- 
- # Look at the plot of validation curves
- plot(cv_pls_comp3)
- 
- # get the optimal values
- cv_pls_comp3
- 
- # Fit the pls model with these parameters
  model <- do.call(sgspls, args = cv_pls_comp3$parameters)
  
- # See model details
  model
  
- # get the regression coefficients
- model_coef <- coef(model, type = "coefficients", comps = 3)
+ model_coef <- coef(model, type = "coefficients")
  
- cbind(beta, model_coef$B)
- 
+ cbind(beta, model_coef$B[,,2])
  
 }
 \references{
@@ -106,6 +95,6 @@ Liquet Benoit, Lafaye de Micheaux, Boris Hejblum, Rodolphe
   Genomics context. \emph{Submitted}.
 }
 \seealso{
-\code{\link{sgspls}} Tuning functions \code{\link{calc_pve}}, \code{\link{tune_groups}}. 
-Model performance and estimation  \code{\link{predict}}, \code{\link{perf.sgspls}}, \code{\link{coeff.sgspls}}
+\code{\link[sgspls]{sgspls}} Tuning functions \code{\link[sgspls]{calc_pve}}, \code{\link[sgspls]{tune_groups}}. 
+Model performance and estimation  \code{\link[sgspls]{predict}}, \code{\link[sgspls]{perf.sgspls}}, \code{\link[sgspls]{coeff.sgspls}}
 }
