@@ -4,10 +4,14 @@
 \alias{plot.cv.sgspls}
 \title{Plot the cross validation curves of a sgspls.cv object}
 \usage{
-\method{plot}{cv.sgspls}(obj, verbose = T)
+\method{plot}{cv.sgspls}(x, verbose = T, ...)
 }
 \arguments{
-\item{obj}{fitted sgspls.cv object}
+\item{x}{fitted sgspls.cv object}
+
+\item{verbose}{logical to print the optimal selection and tuning parameters corresponding to the alphas in the cross-validation graph.}
+
+\item{...}{other parameters to be passed through to plotting functions.}
 }
 \description{
 Produces a plot of the cross validation curves for a "sgspls.cv" object.

@@ -2,10 +2,12 @@
 % Please edit documentation in R/perf.R
 \name{perf.sgspls}
 \alias{perf.sgspls}
+\alias{perf}
 \title{Performance evaluation of sgsPLS objects}
 \usage{
 \method{perf}{sgspls}(object, validation = c("Mfold", "loo"), folds = 10,
-  BIC = FALSE, progressBar = TRUE, setseed = FALSE, scale_resp = FALSE)
+  BIC = FALSE, progressBar = TRUE, setseed = FALSE, scale_resp = FALSE,
+  ...)
 }
 \arguments{
 \item{object}{Object of class inheriting from \code{"sgspls"}. 
@@ -21,8 +23,12 @@ Note that this is not an actual BIC criterion.}
 
 \item{progressBar}{Logical to show a progress bar while computing the performances}
 
+\item{setseed}{optional double to set random seed for replication (default is no seed).}
+
 \item{scale_resp}{Logical to scale the responses. This is useful if comparing the fit on 
 multiple responses.}
+
+\item{...}{additional arguments to be passed to fitting functions.}
 }
 \value{
 \code{perf} returns a list that contains the following performance measures: 
@@ -72,10 +78,10 @@ model_perf$MSEP
 
 }
 \references{
-Mevik, Bjørn-Helge, and Henrik René Cederkvist. 2004. 
+Mevik, Bjorn-Helge, and Henrik Rene Cederkvist. 2004. 
   Mean Squared Error of Prediction (MSEP) Estimates for Principal Component Regression (PCR) 
   and Partial Least Squares Regression (PLSR). 
-  \emph{Journal of Chemometrics} \bold{18} (9). John Wiley & Sons, Ltd.:422–29.
+  \emph{Journal of Chemometrics} \bold{18} (9). John Wiley & Sons, Ltd.:422-29.
 }
 \seealso{
 Tuning functions \code{\link[sgspls]{calc_pve}},

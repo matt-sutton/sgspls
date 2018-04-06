@@ -35,6 +35,7 @@ get_adj_weights <-
 #' the regression \code{coefficients}, the \code{loadings}, the \code{adjusted_weights} or
 #' any subset of these.
 #' @param comps a vector of the components that should be returned.
+#' @param ... not used currently.
 #' 
 #' @export
 #' @return \code{coef} returns a list with the required measures.
@@ -70,7 +71,7 @@ get_adj_weights <-
 #'  cbind(beta, model_coef$B)
 
 coef.sgspls <- 
-  function(object, type = c("coefficients", "loadings", "adjusted_weights"), comps = NULL){
+  function(object, type = c("coefficients", "loadings", "adjusted_weights"), comps = NULL, ...){
     
     # Get data matrices with correct scale
     X <- object$parameters$X

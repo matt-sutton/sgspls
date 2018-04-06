@@ -11,7 +11,7 @@
 #' 
 #' @seealso Tuning functions \code{\link[sgspls]{calc_pve}},
 #' \code{\link[sgspls]{tune_sgspls}}, \code{\link[sgspls]{tune_groups}}. 
-#' Model performance and estimation  \code{\link[sgspls]{predict}}, \code{\link[sgspls]{perf.sgspls}}, \code{\link[sgspls]{coeff.sgspls}} 
+#' Model performance and estimation  \code{\link[sgspls]{predict.sgspls}}, \code{\link[sgspls]{perf.sgspls}}, \code{\link[sgspls]{coef.sgspls}} 
 #' @references Liquet Benoit, Lafaye de Micheaux, Boris Hejblum, Rodolphe
 #'   Thiebaut. A group and Sparse Group Partial Least Square approach applied in
 #'   Genomics context. \emph{Submitted}.
@@ -106,7 +106,7 @@ generate_sparsities <- function(){
 #' Tuning function for finding the number of groups, and sparsities to select for an sgspls object.
 #' Offers a sequential way to find optimal sparsities, and number of groups for either block.
 #' 
-#' @param parameters List of parameters to use in the current PLS object (see examples below).
+#' @param pls_obj List of parameters or object of class \code{cv.sgspls} used to perform cross validation (see examples below).
 #' @param sparsities Matrix of sparsities, with columns corresponding to group, subgroup and individual 
 #' sparsity levels to tune over. If it is NULL then a preselected set of sparsity levels is used.
 #' @param group_seq a vector containing the number of groups to tune over.
@@ -127,7 +127,7 @@ generate_sparsities <- function(){
 #' \item{group_seq}{Groups tuned over in cross validation.}
 #' 
 #' @seealso \code{\link[sgspls]{sgspls}} Tuning functions \code{\link[sgspls]{calc_pve}}, \code{\link[sgspls]{tune_groups}}. 
-#' Model performance and estimation  \code{\link[sgspls]{predict}}, \code{\link[sgspls]{perf.sgspls}}, \code{\link[sgspls]{coeff.sgspls}} 
+#' Model performance and estimation  \code{\link[sgspls]{predict.sgspls}}, \code{\link[sgspls]{perf.sgspls}}, \code{\link[sgspls]{coef.sgspls}} 
 #' 
 #' @references Liquet Benoit, Lafaye de Micheaux, Boris Hejblum, Rodolphe
 #'   Thiebaut. A group and Sparse Group Partial Least Square approach applied in
@@ -165,6 +165,7 @@ generate_sparsities <- function(){
 #'  cv_pls_comp1$results_tuning
 #'  cv_pls_comp1$best
 #'  
+#'  \dontrun{
 #'  # Use the optimal fit for the first component and tune the second component
 #'  cv_pls_comp2 <- tune_sgspls(pls_obj = cv_pls_comp1, group_seq = 1:2, scale_resp = FALSE)
 #'  cv_pls_comp2$results_tuning
@@ -181,7 +182,7 @@ generate_sparsities <- function(){
 #'  model_coef <- coef(model, type = "coefficients")
 #'  
 #'  cbind(beta, model_coef$B[,,2])
-#'  
+#'  }
 tune_sgspls <-
   function(pls_obj, sparsities=NULL, group_seq=NULL, block = "X",
            folds= 10, progressBar=TRUE, setseed = 1, scale_resp = TRUE) {
@@ -295,7 +296,6 @@ tune_sgspls <-
 #' @param group_seq a vector containing the number of groups to tune over.
 #' @param block A string either "X" or "Y" to indicate which block to tune parameters over.
 #' @param folds The number of folds to use in cross validation.
-#' @param progressBar Logical, indicating if a progress bar is shown.
 #' @param setseed False, or integer for replicating tuning parameters.
 #' @param scale_resp Logical, the MSEP is standardised across responses (see perf function for details).
 #' 
@@ -310,7 +310,7 @@ tune_sgspls <-
 #' \item{group_seq}{Groups tuned over in cross validation.}
 #' 
 #' @seealso \code{\link[sgspls]{sgspls}} Tuning functions \code{\link[sgspls]{calc_pve}}, \code{\link[sgspls]{tune_sgspls}}. 
-#' Model performance and estimation  \code{\link[sgspls]{predict}}, \code{\link[sgspls]{perf.sgspls}}, \code{\link[sgspls]{coef.sgspls}} 
+#' Model performance and estimation  \code{\link[sgspls]{predict.sgspls}}, \code{\link[sgspls]{perf.sgspls}}, \code{\link[sgspls]{coef.sgspls}} 
 #' @references Liquet Benoit, Lafaye de Micheaux, Boris Hejblum, Rodolphe
 #'   Thiebaut. A group and Sparse Group Partial Least Square approach applied in
 #'   Genomics context. \emph{Submitted}.

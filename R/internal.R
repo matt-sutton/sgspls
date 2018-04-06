@@ -146,11 +146,11 @@ rep_param <- function(arg, ncomp){
 
 #' Compute scaled vector multiplicaiton 
 #'
-#' Return multiplation of a matrix by scaled vector
+#' Return a vector scaled by a given double
 #' return 0 vector if scale is zero (avoid division by zero).
 #'
-#' @param M n x p matrix of numeric variables
 #' @param u p vector of numeric variables
+#' @param scale a double to scale the vector by.
 #'
 #' @return Output will be a numeric matrix or vector.
 #'
@@ -207,27 +207,28 @@ nonZero <- function(Z, thresh = 1e-06,zero.col = NULL){
 #'
 #' Produces a plot of the cross validation curves for a "sgspls.cv" object.
 #'
-#' @param obj fitted sgspls.cv object
-#'
+#' @param x fitted sgspls.cv object
+#' @param verbose logical to print the optimal selection and tuning parameters corresponding to the alphas in the cross-validation graph.
+#' @param ... other parameters to be passed through to plotting functions.
+#' 
 #' @seealso sgspls.tune, perf
 #'
 #'
-plot.cv.sgspls <- function(obj, verbose = T){
+plot.cv.sgspls <- function(x, verbose = T, ...){
   if(verbose){
-    library(knitr)
     cat("\n ========================================== \n")
-    cat("\n",obj$folds,"fold Cross Validation for sgspls \n\n")
-    nalpha <- length(obj$tuning_sparsities[,1])
+    cat("\n",x$folds,"fold Cross Validation for sgspls \n\n")
+    nalpha <- length(x$tuning_sparsities[,1])
 
     cat( " Tuning Parameters:")
-    table <- data.frame(Legend = paste("alpha",1:nalpha,sep = "_"),obj$tuning_sparsities)
-    print(kable(table, format = "pandoc"))
+    table <- data.frame(Legend = paste("alpha",1:nalpha,sep = "_"),x$tuning_sparsities)
+    print(knitr::kable(table, format = "pandoc"))
     cat("\n ========================================== \n")
   }
 
   legendVal <- parse(text = paste("alpha[",1:nalpha,"]",sep=""))
-  group_seq <- obj$group_seq
-  cv.scores <- obj$results_tuning[,4]
+  group_seq <- x$group_seq
+  cv.scores <- x$results_tuning[,4]
   cv.scores <- matrix(cv.scores, nrow = length(group_seq), ncol = nalpha)
   minalpha <- which(cv.scores == min(cv.scores), arr.ind = T)[2]
   alphawidth <- rep(1,nalpha)
@@ -255,12 +256,12 @@ plot.cv.sgspls <- function(obj, verbose = T){
 
 }
 
-plot.sgspls <- function(obj, verbose = T){
-  if(obj$parameters$mode == "regression"){
-    pve <- calc_pve(obj)
+plot.sgspls <- function(x, verbose = T, ...){
+  if(x$parameters$mode == "regression"){
+    pve <- calc_pve(x)
     plot(drop(pve), xlab = "Number of components", ylab = "Percentage Variance Explained", type = "l")
   } else{
-    singular_values <- obj$singular_vals/obj$singular_vals[1] 
+    singular_values <- x$singular_vals/x$singular_vals[1] 
     plot(singular_values, xlab = "Number of components", ylab = "Normalised singular values", type = "l")
   }
 }

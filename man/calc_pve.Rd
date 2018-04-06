@@ -41,5 +41,5 @@ Liquet Benoit, Lafaye de Micheaux, Boris Hejblum, Rodolphe
 \seealso{
 Tuning functions \code{\link[sgspls]{calc_pve}},
 \code{\link[sgspls]{tune_sgspls}}, \code{\link[sgspls]{tune_groups}}. 
-Model performance and estimation  \code{\link[sgspls]{predict}}, \code{\link[sgspls]{perf.sgspls}}, \code{\link[sgspls]{coeff.sgspls}}
+Model performance and estimation  \code{\link[sgspls]{predict.sgspls}}, \code{\link[sgspls]{perf.sgspls}}, \code{\link[sgspls]{coef.sgspls}}
 }

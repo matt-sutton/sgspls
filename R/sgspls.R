@@ -34,6 +34,8 @@
 #'   1) related to the number of subgroups selected for the PLS \eqn{Y} weights.
 #' @param scale.x Scale predictors by their standard deviation.
 #' @param scale.y Scale responses by their standard deviation.
+#' @param ... additional arguments for low level functionality.
+#' @param max.iter How many iterations should be performed? Default is 500.
 #'
 #' @export
 #' @return \code{sgspls} returns an object of class \code{"sgspls"}, a list that
@@ -61,7 +63,7 @@
 #'
 #' @seealso Tuning functions \code{\link[sgspls]{calc_pve}},
 #' \code{\link[sgspls]{tune_sgspls}}, \code{\link[sgspls]{tune_groups}}. 
-#' Model performance and estimation  \code{\link[sgspls]{predict}}, \code{\link[sgspls]{perf.sgspls}}, \code{\link[sgspls]{coef.sgspls}} 
+#' Model performance and estimation  \code{\link[sgspls]{predict.sgspls}}, \code{\link[sgspls]{perf.sgspls}}, \code{\link[sgspls]{coef.sgspls}} 
 #'
 #' @examples
 #'

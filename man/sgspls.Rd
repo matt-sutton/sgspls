@@ -29,6 +29,8 @@ select in \eqn{X}-loadings. Default selects all groups.}
 \item{keepY}{Numeric vector of length \code{ncomp}, the number of groups to
 select in \eqn{Y}-loadings. Default selects all groups.}
 
+\item{max.iter}{How many iterations should be performed? Default is 500.}
+
 \item{tol}{A positive real tolerance for the PLS algorithm.}
 
 \item{scale.x}{Scale predictors by their standard deviation.}
@@ -58,6 +60,8 @@ related to the sparisty within subgroups for the \eqn{Y} block.}
 
 \item{subgroup_sparsity_y}{Sub-group sparisty parameter (value between 0 and
 1) related to the number of subgroups selected for the PLS \eqn{Y} weights.}
+
+\item{...}{additional arguments for low level functionality.}
 }
 \value{
 \code{sgspls} returns an object of class \code{"sgspls"}, a list that
@@ -122,7 +126,7 @@ Liquet Benoit, Lafaye de Micheaux, Boris Hejblum, Rodolphe
 \seealso{
 Tuning functions \code{\link[sgspls]{calc_pve}},
 \code{\link[sgspls]{tune_sgspls}}, \code{\link[sgspls]{tune_groups}}. 
-Model performance and estimation  \code{\link[sgspls]{predict}}, \code{\link[sgspls]{perf.sgspls}}, \code{\link[sgspls]{coef.sgspls}}
+Model performance and estimation  \code{\link[sgspls]{predict.sgspls}}, \code{\link[sgspls]{perf.sgspls}}, \code{\link[sgspls]{coef.sgspls}}
 }
 \author{
 Matthew Sutton \email{m5.sutton@hdr.qut.edu.au}

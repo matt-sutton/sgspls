@@ -5,7 +5,7 @@
 \title{Compute regression coefficients, loadings and}
 \usage{
 \method{coef}{sgspls}(object, type = c("coefficients", "loadings",
-  "adjusted_weights"), comps = NULL)
+  "adjusted_weights"), comps = NULL, ...)
 }
 \arguments{
 \item{object}{a sgspls object, parameters will be extracted from the object.}
@@ -15,6 +15,8 @@ the regression \code{coefficients}, the \code{loadings}, the \code{adjusted_weig
 any subset of these.}
 
 \item{comps}{a vector of the components that should be returned.}
+
+\item{...}{not used currently.}
 }
 \value{
 \code{coef} returns a list with the required measures.

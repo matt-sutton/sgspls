@@ -1,3 +1,21 @@
 useDynLib(sgspls, .registration=TRUE)
 importFrom(Rcpp, evalCpp)
 exportPattern("^[[:alpha:]]+")
+
+importFrom("stats", "coef", "cor", "predict", "rnorm", "sd", "uniroot",
+             "var")
+
+importFrom("utils", "setTxtProgressBar", "txtProgressBar")
+importFrom("graphics", "legend", "matplot", "plot")
+importFrom("grDevices", "rainbow")
+
+
+S3method(perf, sgspls)
+S3method(predict, sgspls)
+S3method(coef, sgspls)
+S3method(print, sgspls)
+S3method(plot, sgspls)
+
+S3method(print, cv.sgspls)
+S3method(plot, cv.sgspls)
+

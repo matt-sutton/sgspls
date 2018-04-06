@@ -4,15 +4,20 @@
 \alias{sgspls-internal}
 \alias{cal_weights}
 \alias{checkalphas}
+\alias{generate_sparsities}
+\alias{get_adj_weights}
+\alias{get_loading}
+\alias{lambdazerosubgroup}
+\alias{rep_param}
+\alias{sgssoftthresh}
+\alias{softthresh}
+\alias{updataU}
+\alias{pls.scale}
+\alias{plot.sgspls}
+\alias{print.cv.sgspls}
+\alias{print.sgspls}
+\alias{sim_regression}
 \title{Internal sgspls functions}
-\usage{
-cal_weights(M, svd.M, keepX = NA, keepY = NA, groupX = NA, groupY = NA,
-  subgroupX = NA, subgroupY = NA, alpha1.x = 0, alpha2.x = 0,
-  alpha1.y = 0, alpha2.y = 0, tol = 1e-06, max.iter = 500,
-  lambda.x = 0, lambda.y = 0)
-
-checkalphas(alpha)
-}
 \description{
 Internal sgspls functions
 }

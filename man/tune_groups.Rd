@@ -19,8 +19,6 @@ tune_groups(parameters, group_seq = NULL, block = "X", folds = 10,
 \item{scale_resp}{Logical, the MSEP is standardised across responses (see perf function for details).}
 
 \item{setseed}{False, or integer for replicating tuning parameters.}
-
-\item{progressBar}{Logical, indicating if a progress bar is shown.}
 }
 \value{
 \code{tune_groups} returns a list with class \code{cv.sgspls} with measures:
@@ -74,5 +72,5 @@ Liquet Benoit, Lafaye de Micheaux, Boris Hejblum, Rodolphe
 }
 \seealso{
 \code{\link[sgspls]{sgspls}} Tuning functions \code{\link[sgspls]{calc_pve}}, \code{\link[sgspls]{tune_sgspls}}. 
-Model performance and estimation  \code{\link[sgspls]{predict}}, \code{\link[sgspls]{perf.sgspls}}, \code{\link[sgspls]{coef.sgspls}}
+Model performance and estimation  \code{\link[sgspls]{predict.sgspls}}, \code{\link[sgspls]{perf.sgspls}}, \code{\link[sgspls]{coef.sgspls}}
 }

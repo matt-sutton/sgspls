@@ -8,11 +8,11 @@ Maintainer: Matthew Sutton <matt.sutton@qut.edu.au>
 Description: Implementation of sparse group subgroup Partial Least Squares.
     Designed for variable selection at a group, subgroup and individual level.
 License: GPL (>= 2.0)
-Imports: Rcpp (>= 0.12.14),
-         MASS,
-         stats,
-         irlba,
-         knitr,
-         sgPLS
+Imports: Rcpp (>= 0.11.0),
+    MASS,
+    stats,
+    irlba,
+    knitr
 LinkingTo: Rcpp, RcppArmadillo
 RoxygenNote: 6.0.1
+

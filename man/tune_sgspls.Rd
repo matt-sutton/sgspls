@@ -8,6 +8,8 @@ tune_sgspls(pls_obj, sparsities = NULL, group_seq = NULL, block = "X",
   folds = 10, progressBar = TRUE, setseed = 1, scale_resp = TRUE)
 }
 \arguments{
+\item{pls_obj}{List of parameters or object of class \code{cv.sgspls} used to perform cross validation (see examples below).}
+
 \item{sparsities}{Matrix of sparsities, with columns corresponding to group, subgroup and individual 
 sparsity levels to tune over. If it is NULL then a preselected set of sparsity levels is used.}
 
@@ -22,8 +24,6 @@ sparsity levels to tune over. If it is NULL then a preselected set of sparsity l
 \item{setseed}{False, or integer for replicating tuning parameters.}
 
 \item{scale_resp}{Logical, the MSEP is standardised across responses (see perf function for details).}
-
-\item{parameters}{List of parameters to use in the current PLS object (see examples below).}
 }
 \value{
 \code{tune_sgspls} returns a list with class \code{cv.sgspls} with measures:
@@ -71,6 +71,7 @@ Offers a sequential way to find optimal sparsities, and number of groups for eit
  cv_pls_comp1$results_tuning
  cv_pls_comp1$best
  
+ \dontrun{
  # Use the optimal fit for the first component and tune the second component
  cv_pls_comp2 <- tune_sgspls(pls_obj = cv_pls_comp1, group_seq = 1:2, scale_resp = FALSE)
  cv_pls_comp2$results_tuning
@@ -87,7 +88,7 @@ Offers a sequential way to find optimal sparsities, and number of groups for eit
  model_coef <- coef(model, type = "coefficients")
  
  cbind(beta, model_coef$B[,,2])
- 
+ }
 }
 \references{
 Liquet Benoit, Lafaye de Micheaux, Boris Hejblum, Rodolphe
@@ -96,5 +97,5 @@ Liquet Benoit, Lafaye de Micheaux, Boris Hejblum, Rodolphe
 }
 \seealso{
 \code{\link[sgspls]{sgspls}} Tuning functions \code{\link[sgspls]{calc_pve}}, \code{\link[sgspls]{tune_groups}}. 
-Model performance and estimation  \code{\link[sgspls]{predict}}, \code{\link[sgspls]{perf.sgspls}}, \code{\link[sgspls]{coeff.sgspls}}
+Model performance and estimation  \code{\link[sgspls]{predict.sgspls}}, \code{\link[sgspls]{perf.sgspls}}, \code{\link[sgspls]{coef.sgspls}}
 }

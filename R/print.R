@@ -1,7 +1,7 @@
 print.sgspls <-
-  function( object, ... )
+  function( x, ... )
   {
-    parameters <- object$parameters
+    parameters <- x$parameters
     ncomp <- parameters$ncomp
     mode <- parameters$mode
     keepX <- parameters$keepX
@@ -25,13 +25,13 @@ print.sgspls <-
     # cat(" You entered data X of dimensions:", n, p, "\n")
     # cat(" You entered data Y of dimensions:", n, q, "\n\n")
     
-    cat( paste0(" Selected ",sum(rowSums(abs(object$weights$X)>0)>0)," variables among ",p," variables on the X block. \n"))
-    cat( " Selected variables per component:",colSums(abs(object$weights$X)>0),"\n")
-    cat( " Selected Groups:",unique(unlist(apply(object$weights$X,2,function(x)groupX[which(abs(x)>0)]))),"\n\n")
+    cat( paste0(" Selected ",sum(rowSums(abs(x$weights$X)>0)>0)," variables among ",p," variables on the X block. \n"))
+    cat( " Selected variables per component:",colSums(abs(x$weights$X)>0),"\n")
+    cat( " Selected Groups:",unique(unlist(apply(x$weights$X,2,function(x)groupX[which(abs(x)>0)]))),"\n\n")
     
-    cat( paste0(" Selected ",sum(rowSums(abs(object$weights$Y)>0)>0)," variables among ",q," variables on the Y block.\n") )
-    cat( " Selected variables per component:",colSums(abs(object$weights$Y)>0),"\n")
-    cat( " Selected Groups:",unique(unlist(apply(object$weights$Y,2,function(x)groupY[which(abs(x)>0)]))),"\n\n")
+    cat( paste0(" Selected ",sum(rowSums(abs(x$weights$Y)>0)>0)," variables among ",q," variables on the Y block.\n") )
+    cat( " Selected variables per component:",colSums(abs(x$weights$Y)>0),"\n")
+    cat( " Selected Groups:",unique(unlist(apply(x$weights$Y,2,function(x)groupY[which(abs(x)>0)]))),"\n\n")
     
     cat( " Model Parameters:\n\n") 
     if(keepX[1]==length(unique(groupX)) && indiv_sparsity_x[1] -subgroup_sparsity_x[1] == 0){
@@ -64,16 +64,16 @@ print.sgspls <-
   }
 
 print.cv.sgspls <-
-  function( object, ... )
+  function( x, ... )
   {
     cat("\n ========================================== \n")
-    cat("\n",object$folds,"fold Cross Validation for sgspls \n\n")
+    cat("\n",x$folds,"fold Cross Validation for sgspls \n\n")
     
     cat( " Optimal Parameters:\n\n") 
     cat( "  keepX ", " group ", " subgroup ", " individual \n" )
-    cat("   ",object$best[1],"    ", 1 - object$best[2] - object$best[3], "    ",object$best[3], "      ",object$best[2]," \n" )
+    cat("   ",x$best[1],"    ", 1 - x$best[2] - x$best[3], "    ",x$best[3], "      ",x$best[2]," \n" )
     cat("\n")
-    cat( " Optimal MSEP:",object$min_cv,"\n\n")
+    cat( " Optimal MSEP:",x$min_cv,"\n\n")
     cat(" Available plotting: see plot(object) \n")
     cat("\n ========================================== \n")
   }

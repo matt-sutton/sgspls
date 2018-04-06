@@ -9,12 +9,12 @@ scale_vec(u, scale = 1)
 \arguments{
 \item{u}{p vector of numeric variables}
 
-\item{M}{n x p matrix of numeric variables}
+\item{scale}{a double to scale the vector by.}
 }
 \value{
 Output will be a numeric matrix or vector.
 }
 \description{
-Return multiplation of a matrix by scaled vector
+Return a vector scaled by a given double
 return 0 vector if scale is zero (avoid division by zero).
 }

@@ -2,6 +2,8 @@
 #'
 #' Internal sgspls functions
 #'
+#' @aliases cal_weights checkalphas generate_sparsities get_adj_weights get_loading lambdazerosubgroup rep_param sgssoftthresh softthresh updataU pls.scale plot.sgspls print.cv.sgspls print.sgspls sim_regression
+#' 
 #' @details These are not intended for use by the user.
 #'   \code{softhresh(Mx,lambda)} provides soft thresholding on vector Mx with
 #'   parameter lambda, \code{checkalphas} checks if the alpha values entered are
@@ -11,7 +13,6 @@
 #' @name sgspls-internal
 NULL
 
-#' @rdname sgspls-internal
 cal_weights <- function(M,svd.M,keepX=NA,keepY=NA,groupX=NA,groupY=NA,subgroupX=NA,subgroupY=NA,
                                           alpha1.x=0,alpha2.x=0,alpha1.y=0,alpha2.y=0,tol=1e-06,max.iter=500,
                                           lambda.x=0, lambda.y=0){
@@ -90,7 +91,7 @@ cal_weights <- function(M,svd.M,keepX=NA,keepY=NA,groupX=NA,groupY=NA,subgroupX=
 }
 
 
-#' @rdname sgspls-internal
+
 checkalphas <- function(alpha)  return(pmin(pmax(alpha,0),0.9999999)) # alpha kept between 0 and 0.99999
 
 
@@ -112,7 +113,6 @@ checkalphas <- function(alpha)  return(pmin(pmax(alpha,0),0.9999999)) # alpha ke
 #' # Return the alphas used for the required sparsities
 #' get_alphas(indiv_sparsity = c(0.4,0), subgroup_sparsity = c(0.2,1))
 #' 
-
 
 get_alphas <- function(indiv_sparsity, subgroup_sparsity){
   

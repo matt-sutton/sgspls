@@ -1,3 +1,17 @@
+#' Predict Method for sgspls
+#'
+#' Predicted values based on sparse group subgroup PLS. New responses are predicted using a fitted model and a new matrix of observations.
+#'
+#' @param object Object of class inheriting from \code{"sgspls"}. 
+#' @param newdata Data matrix in which to look for for explanatory variables to be used for prediction.
+#' @param ... Not currently used.
+#' 
+#' @export
+#' @return \code{perf} returns a list that contains the following performance measures: 
+#' \code{predict} function produces predicted values, obtained by evaluating the sparse group subgroup PLS. 
+#' The prediction values are calculated based on the regression coefficients of \code{object$Y} onto \code{object$variates$X}.
+#' 
+
 predict.sgspls <-
   function(object, newdata,  ...)  {
     
@@ -5,6 +19,7 @@ predict.sgspls <-
 
     newdata <-  as.matrix(newdata)
     nobs <- nrow(newdata)
+    p <- ncol(newdata)
     nresp <- ncol(object$parameters$Y)
     npred <- ncol(object$parameters$X)
     ncomp <- object$parameters$ncomp
