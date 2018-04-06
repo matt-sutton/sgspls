@@ -208,7 +208,8 @@ sgspls <-
       svd.M <- try(svd(M,nu = 1,nv = 1))
 
       if(class(svd.M) == "try-error"){
-        irlba::irlba(M,nu = 1,nv = 1)
+        M <- M / (n-1)
+        svd.M <- try(svd(M,nu = 1,nv = 1))
       }
 
       if (svd.M$d[1] < .Machine$double.eps) {

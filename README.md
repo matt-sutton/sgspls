@@ -12,7 +12,7 @@ Use [devtools](https://github.com/hadley/devtools) to install:
 
 ```R
 library(devtools)
-install_github("sgspls", "matt-sutton")
+install_github("matt-sutton/sgspls")
 ```
 
 Example Usage (regression)
@@ -36,6 +36,7 @@ y = X %*% beta + 0.5*rnorm(n)
 
 #--------------------------------------#
 #-- Set up a basic model to tune --#
+library(sgspls)
 
 cv_pls <- list(X=X, Y=y, groupX=groupX, subgroupX=subgroupX)
 
