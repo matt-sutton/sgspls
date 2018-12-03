@@ -228,7 +228,7 @@ plot.cv.sgspls <- function(x, verbose = T, ...){
 
   legendVal <- parse(text = paste("alpha[",1:nalpha,"]",sep=""))
   group_seq <- x$group_seq
-  cv.scores <- x$results_tuning[,4]
+  cv.scores <- x$results_tuning[,ncol(x$results_tuning)]
   cv.scores <- matrix(cv.scores, nrow = length(group_seq), ncol = nalpha)
   minalpha <- which(cv.scores == min(cv.scores), arr.ind = T)[2]
   alphawidth <- rep(1,nalpha)

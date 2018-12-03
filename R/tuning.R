@@ -277,7 +277,7 @@ tune_sgspls <-
                    parameters = parameters,
                    tuning_sparsities = sparsities,
                    folds = folds,
-                   min_cv = min(results_tuning[,4]),
+                   min_cv = min(results_tuning[,-c(1:3)]),
                    group_seq = group_seq,
                    folds = object_groups$folds)
 
