@@ -142,9 +142,9 @@ coef.sgspls <-
       xmeans <- colMeans(X) 
       for( a in 1:ncomp ){
         B <- tcrossprod(x_adjusted_weights[,1:a, drop = F], y_loads[,1:a, drop = F])
-        B0[a, ] <- ymeans - xmeans%*%B
         
         B <- apply( B, 2, function(b) scale(t(b),scale = x_scale, center = F) )
+        B0[a, ] <- ymeans - xmeans%*%B
         B_hat[ , , a] <- scale(B, scale = 1/y_scale, center = F) 
       }
       res$B <- B_hat[,,comps, drop = F]
